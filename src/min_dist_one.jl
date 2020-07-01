@@ -13,8 +13,9 @@ end
 function solve_positions(layout::LayeredMinDistOne, graph)
     layer_groups = determine_layers(layout, graph)
 
-    m = Model(Ipopt.Optimizer)
+    m = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0))
     set_silent(m)
+    
     ys = map(enumerate(layer_groups)) do (layer, nodes)
         y_min = 0  # IPOpt can't find a solution without this
 
