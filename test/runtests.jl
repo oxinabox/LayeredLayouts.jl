@@ -8,8 +8,11 @@ using VisualRegressionTests
     include("test_utils.jl")
     include("examples.jl")
 
-    include("min_dist_one.jl")
-    
+    @testset "$fn" for fn in (
+        "min_dist_one.jl"
+    )
+        include(fn)
+    end
 end
 
 

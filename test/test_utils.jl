@@ -5,7 +5,7 @@ macro ref_str(fn)
         filename = splitext(basename(string($(QuoteNode(__source__)).file)))[1]
         file_reference_dir = mkpath(joinpath($all_references_dir, filename))
         joinpath(file_reference_dir, string($fn, ".png"))
-    end
+    end |> esc
 end
 
 function quick_plot(graph, xs, ys)
@@ -21,6 +21,8 @@ function quick_plot(graph, xs, ys)
     end
     plot!(lxs, lys; legend=false)
 end
+
+quick_plot_solve(layout, graph) = quick_plot(graph, solve_positions(LayeredMinDistOne(), graph)...) 
 
 @testset "test_utils.jl" begin
     @testset "quick_plot" begin

@@ -1,4 +1,4 @@
-@testset "medium_pert" begin
-    xs, ys = solve_positions(LayeredMinDistOne(), Examples.medium_pert)
-    @plottest quick_plot(Examples.medium_pert, xs, ys) ref"medium_pert"
-end
+@plottest quick_plot_solve(LayeredMinDistOne(), Examples.medium_pert) ref"medium_pert"
+
+# Lays out very poorly due to running out of iterations
+@plottest quick_plot_solve(LayeredMinDistOne(), Examples.chainrule_dependants) ref"chainrule_dependants"
