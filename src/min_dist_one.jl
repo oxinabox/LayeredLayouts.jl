@@ -4,14 +4,9 @@ Base.@kwdef struct LayeredMinDistOne <: AbstractLayout
     intralayer_seperation::Float64 = 1.0
 end
 
-function determine_layers(::LayeredMinDistOne, graph)
-    dists = longest_paths(graph, sources(graph))
-    layer_groups = IterTools.groupby(i->dists[i], sort(vertices(graph), by=i->dists[i]))
-    return layer_groups
-end
 
 function solve_positions(layout::LayeredMinDistOne, graph)
-    layer_groups = determine_layers(layout, graph)
+    layer_groups = layer_by_longest_path_to_source(graph)
 
     m = Model(Ipopt.Optimizer)
     set_silent(m)

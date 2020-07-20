@@ -22,7 +22,7 @@ function quick_plot(graph, xs, ys)
     plot!(lxs, lys; legend=false)
 end
 
-quick_plot_solve(layout, graph) = quick_plot(graph, solve_positions(LayeredMinDistOne(), graph)...) 
+quick_plot_solve(layout, graph) = quick_plot(graph, solve_positions(layout, graph)...) 
 
 @testset "test_utils.jl" begin
     @testset "quick_plot" begin
