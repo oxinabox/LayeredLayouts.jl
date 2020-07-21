@@ -27,6 +27,11 @@ function order_layers!(graph, layer2nodes)
                 n1 === n2 && continue
                 # can't have n1<n2 and n2<n1
                 @constraint(m, before[n1, n2] + before[n2, n1] == 1)
+                for n3 in nodes
+                    (n1 === n3 || n2 === n3) && continue
+                    # at most two of these 3 hold
+                    @constraint(m , before[n1, n2] + before[n2, n3] + before[n3, n1] <= 2)
+                end
             end
         end
     end
@@ -38,11 +43,10 @@ function order_layers!(graph, layer2nodes)
             for dst1 in outneighbors(graph, src1), dst2 in outneighbors(graph, src2)
                 # Can't cross if share end-point 
                 (src1 === src2 || dst1 === dst2) && continue
-                
+                crossing = @variable(m, binary=true, base_name="cross $src1-$dst2 x $src1-$dst2")
                 # two edges cross if the src1 is before scr2; but dst1 is after dest2
-                # node_is_before[src1][src2] + node_is_before[dst2][dst1]  - 1
-                add_to_expression!(total, node_is_before[src1][src2])
-                add_to_expression!(total, node_is_before[dst2][dst1])
+                @constraint(m, node_is_before[src1][src2] + node_is_before[dst2][dst1] - 1 <= crossing)
+                add_to_expression!(total, crossing)
             end
         end
         return total
