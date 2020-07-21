@@ -36,7 +36,9 @@ function order_layers!(graph, layer2nodes)
         end
     end
 
+    befores_vars = all_variables(m)  # before we add crossing variables
 
+    weights_mat = weights(graph)
     function crossings(src_layer)
         total = AffExpr(0)
         for src1 in src_layer, src2 in src_layer
@@ -46,7 +48,13 @@ function order_layers!(graph, layer2nodes)
                 crossing = @variable(m, binary=true, base_name="cross $src1-$dst2 x $src1-$dst2")
                 # two edges cross if the src1 is before scr2; but dst1 is after dest2
                 @constraint(m, node_is_before[src1][src2] + node_is_before[dst2][dst1] - 1 <= crossing)
-                add_to_expression!(total, crossing)
+                
+                # for Sankey diagrams we minimise not just crossing but area of crossing
+                # treating the weights of the graph as the widths of the line and ignoring skew
+                w1 = weights_mat[src1, dst1]
+                w2 = weights_mat[src2, dst2]
+                area = w1*w2
+                add_to_expression!(total, area, crossing)
             end
         end
         return total
@@ -57,8 +65,10 @@ function order_layers!(graph, layer2nodes)
     @show termination_status(m)
     @show objective_value(m)
 
+    # for debugging of solutions  #############
     global last_m = m
-    
+    global last_befores_vars = befores_vars
+    #############################
     
     # Cunning trick: we need to go from the `before` matrix to an actual order list
     # we can do this by sorting when having `lessthan` read from the `before` matrix
@@ -71,16 +81,14 @@ function order_layers!(graph, layer2nodes)
             is_before && println("$n1 < $n2")
         end
         ==#
-
-        shuffle!(layer)
         sort!(layer; lt=is_before_func)
     end    
 end
 
-function find_next_best_solution!(m)
+function find_next_best_solution!(m, befores_vars)
     cur_trues = AffExpr(0)
     total_trues = 0
-    for var in all_variables(m)
+    for var in befores_vars(m)
         if Bool(value(var)) 
             add_to_expression!(cur_trues, var)
             total_trues += 1
