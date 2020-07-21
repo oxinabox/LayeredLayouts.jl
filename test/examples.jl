@@ -18,4 +18,20 @@ module Examples
         9 => 10
     10 => 11
     ]))
+
+    chainrule_dependants = SimpleDiGraph(Edge.([
+        1 => 2
+        2 => 4
+        2 => 5
+        2 => 6
+        3 => 2
+        3 => 4
+        3 => 7
+        3 => 5
+        3 => 8
+        3 => 6
+        4 => 9
+        4 => 10
+        4 => 11
+    ]))
 end

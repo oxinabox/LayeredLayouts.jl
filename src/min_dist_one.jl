@@ -15,6 +15,9 @@ function solve_positions(layout::LayeredMinDistOne, graph)
 
     m = Model(Ipopt.Optimizer)
     set_silent(m)
+    set_optimizer_attribute(m, "print_level", 0)
+    
+    
     ys = map(enumerate(layer_groups)) do (layer, nodes)
         y_min = 0  # IPOpt can't find a solution without this
 
@@ -25,9 +28,12 @@ function solve_positions(layout::LayeredMinDistOne, graph)
     end
 
     node_vars = Dict{Int, VariableRef}() # lookup list from vertex index to variable
-    for (y, nodes) in zip(ys, layer_groups)
+    node_layer_indexes = Dict{Int, Int}()
+    for (layer_ind, (y, nodes)) in enumerate(zip(ys, layer_groups))
         for n in nodes
             @assert !haskey(node_vars, n)
+            @assert !haskey(node_layer_indexes, n)
+            node_layer_indexes[n] = layer_ind
             node_vars[n] = y[n] # remember this for later
         end
     end
@@ -49,14 +55,14 @@ function solve_positions(layout::LayeredMinDistOne, graph)
     ))
 
     optimize!(m)
+    @show termination_status(m)
     
     xs = Float64[]
     ys = Float64[]
-    for (layer, nodes) in enumerate(layer_groups)
-        for node in nodes
-            push!(xs, layer)
-            push!(ys, value(node_vars[node]))
-        end
+    for node in vertices(graph)
+        layer_ind = node_layer_indexes[node]
+        push!(xs, layout.interlayer_seperation * layer_ind)
+        push!(ys, value(node_vars[node]))
     end
     return xs, ys
 end
