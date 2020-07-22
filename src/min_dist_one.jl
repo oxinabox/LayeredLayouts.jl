@@ -10,7 +10,7 @@ function solve_positions(layout::LayeredMinDistOne, graph)
 
     m = Model(Ipopt.Optimizer)
     set_silent(m)
-    set_optimizer_attribute(m, "print_level", 0)
+    set_optimizer_attribute(m, "print_level", 0)  # TODO this can be deleted once the version of IPOpt that actually supports `set_silent` is released
     
     
     ys = map(enumerate(layer_groups)) do (layer, nodes)

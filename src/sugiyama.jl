@@ -85,11 +85,12 @@ function order_layers!(graph, layer2nodes)
     end    
 end
 
-function find_next_best_solution!(m, befores_vars)
+#TODO: use this to find all equal solutions then they can all be passed to the arranging function
+function find_next_best_ordering_solution!(m, befores_vars)
     cur_trues = AffExpr(0)
     total_trues = 0
     for var in befores_vars(m)
-        if Bool(value(var)) 
+        if value(var) > 0.5 
             add_to_expression!(cur_trues, var)
             total_trues += 1
             print(var)
@@ -103,13 +104,60 @@ function find_next_best_solution!(m, befores_vars)
     @show objective_value(m)
 end
 
-function assign_coordinates(graph, layer2nodes)
+#==
+function assign_coordinates_naive(graph, layer2nodes)
     xs = Vector{Float64}(undef, nv(graph))
     ys = Vector{Float64}(undef, nv(graph))
     for (xi, layer) in enumerate(layer2nodes)
         for (yi, node) in enumerate(layer)
             xs[node] = xi
             ys[node] = yi - length(layer)/2
+        end
+    end
+    return xs, ys
+end
+==#
+
+
+function assign_coordinates(graph, layer2nodes)
+    m = Model(Ipopt.Optimizer)
+    set_silent(m)
+    set_optimizer_attribute(m, "print_level", 0)  # TODO this can be deleted once the version of IPOpt that actually supports `set_silent` is released
+
+    node2y = Dict{Int, VariableRef}()
+    for (layer, nodes) in enumerate(layer2nodes)
+        prev_y = -1.0
+        for node in nodes
+            # each must be greater than the last, with a gap of 1 unit
+            y = @variable(m, base_name="y_$node")
+            @constraint(m, prev_y + 1.0 <= y)
+            node2y[node] = y
+            prev_y = y
+        end
+    end
+
+    weights_mat = weights(graph)
+    total_distance = QuadExpr(AffExpr(0.0))
+    for cur in vertices(graph)
+        for out in outneighbors(graph, cur)
+            w = weights_mat[cur, out]
+            distance = (node2y[cur] - node2y[out])^2
+            add_to_expression!(total_distance, w, distance)
+        end 
+    end
+
+    @objective(m, Min, total_distance);
+    optimize!(m)
+    @show termination_status(m)
+    @show objective_value(m)
+
+    ###
+    xs = Vector{Float64}(undef, nv(graph))
+    ys = Vector{Float64}(undef, nv(graph))
+    for (xi, nodes) in enumerate(layer2nodes)
+        for node in nodes
+            xs[node] = xi
+            ys[node] = value(node2y[node])
         end
     end
     return xs, ys
