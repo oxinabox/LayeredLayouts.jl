@@ -6,7 +6,7 @@ using IterTools: IterTools
 using LightGraphs
 using Random
 
-export LayeredMinDistOne
+export LayeredMinDistOne, Sugiyama
 export solve_positions
 
 abstract type AbstractLayout end

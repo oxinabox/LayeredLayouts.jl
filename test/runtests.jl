@@ -9,11 +9,9 @@ using VisualRegressionTests
     include("examples.jl")
 
     @testset "$fn" for fn in (
-        "min_dist_one.jl"
+        "min_dist_one.jl",
+        "sugiyama.jl",
     )
         include(fn)
     end
 end
-
-
-
