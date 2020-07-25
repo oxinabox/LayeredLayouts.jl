@@ -1,19 +1,19 @@
-struct Sugiyama <: AbstractLayout
+struct OptimalSugiyama <: AbstractLayout
 end
 
-function solve_positions(layout::Sugiyama, original_graph)
+function solve_positions(layout::OptimalSugiyama, original_graph)
     graph = copy(original_graph)
     layer2nodes = layer_by_longest_path_to_source(graph)
     is_dummy_mask = add_dummy_nodes!(graph, layer2nodes)
 
-    order_layers!(graph, layer2nodes)
+    order_layers!(layout, graph, layer2nodes)
 
     xs, ys = assign_coordinates(graph, layer2nodes)
     return xs[.!is_dummy_mask], ys[.!is_dummy_mask] 
 end
 
 
-function order_layers!(graph, layer2nodes)
+function order_layers!(::OptimalSugiyama, graph, layer2nodes)
     m = Model(Cbc.Optimizer)
     set_silent(m)
 

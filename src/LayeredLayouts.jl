@@ -6,7 +6,7 @@ using IterTools: IterTools
 using LightGraphs
 using Random
 
-export LayeredMinDistOne, Sugiyama
+export LayeredMinDistOne, OptimalSugiyama
 export solve_positions
 
 abstract type AbstractLayout end
@@ -15,6 +15,6 @@ include("graph_properties.jl")
 include("layering.jl")
 
 include("min_dist_one.jl")
-include("sugiyama.jl")
+include("optimal_sugiyama.jl")
 
 end
