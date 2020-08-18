@@ -1,6 +1,5 @@
 # This contains algorithms for breaking up a DAG into layers
 
-
 function layer_by_longest_path_to_source(graph)
     dists = longest_paths(graph, sources(graph))
     layer_groups = IterTools.groupby(i->dists[i], sort(vertices(graph), by=i->dists[i]))

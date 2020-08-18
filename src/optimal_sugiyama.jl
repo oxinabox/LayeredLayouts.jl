@@ -1,19 +1,72 @@
+"""
+    OptimalSugiyama
+
+# Fields
+ - `time_limit::Dates.Period`: how long to spend trying alternative orderings.
+   There are often many possible orderings that have the same amount of crossings.
+   There is a chance that one of these will allow a better arrangement than others.
+   Mostly the first solution tends to be very good.
+   By setting a `time_limit > Second(0)`, multiple will be tried til the time limit is exceeded.
+   (Note: that this is not a maximum time, but rather a limit that once exceeded no more
+   attempts will be made.).
+   If you have a `time_limit` greater than `Second(0)` set then the result is no longer determenistic.
+   Note also that this is heavily affected by first call compilation time.
+"""
 struct OptimalSugiyama <: AbstractLayout
+    time_limit::Dates.Period
 end
+OptimalSugiyama() = OptimalSugiyama(Dates.Second(1))
 
 function solve_positions(layout::OptimalSugiyama, original_graph)
     graph = copy(original_graph)
+
+    # 1. Layer Assigment
     layer2nodes = layer_by_longest_path_to_source(graph)
     is_dummy_mask = add_dummy_nodes!(graph, layer2nodes)
 
-    order_layers!(layout, graph, layer2nodes)
+    # 2. Layer Ordering
+    start_time = Dates.now()
+    min_total_distance = Inf
+    min_num_crossing = Inf
+    local best_pos
+    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes)
+    for round in 1:typemax(Int)
+        round > 1 && forbid_solution!(ordering_model, is_before)
 
-    xs, ys = assign_coordinates(graph, layer2nodes)
+        optimize!(ordering_model)
+        # No need to keep banning solutions if not finding optimal ones anymore
+        termination_status(ordering_model) != MOI.OPTIMAL && break
+        num_crossings = objective_value(ordering_model)
+        # we are not interested in arrangements that have more crossings, only in 
+        # alternatives with same number of crossings.
+        num_crossings > min_num_crossing && break
+        min_num_crossing = num_crossings
+        order_layers!(layer2nodes, is_before)
+
+        # 3. Node Arrangement
+        xs, ys, total_distance = assign_coordinates(graph, layer2nodes)
+        if total_distance < min_total_distance
+            min_total_distance = total_distance
+            best_pos = (xs, ys)
+        end
+        Dates.now() - start_time > layout.time_limit && break
+    end
+    xs, ys = best_pos
     return xs[.!is_dummy_mask], ys[.!is_dummy_mask] 
 end
 
+"""
+    ordering_problem(::OptimalSugiyama, graph, layer2nodes)
 
-function order_layers!(::OptimalSugiyama, graph, layer2nodes)
+Formulates the problem of working out optimal ordering as a MILP.
+
+Returns:
+ - `model::Model`: the JuMP model that when optized will find the optimal ordering
+ - `is_before::AbstractVector{AbstractVector{Variable}}`: the variables of the model,
+   which once solved will have `value(is_before[n1][n2]) == true` 
+   if `n1` is best arrange before `n2`.
+"""
+function ordering_problem(::OptimalSugiyama, graph, layer2nodes)
     m = Model(Cbc.Optimizer)
     set_silent(m)
 
@@ -35,8 +88,6 @@ function order_layers!(::OptimalSugiyama, graph, layer2nodes)
             end
         end
     end
-
-    befores_vars = all_variables(m)  # before we add crossing variables
 
     weights_mat = weights(graph)
     function crossings(src_layer)
@@ -61,64 +112,53 @@ function order_layers!(::OptimalSugiyama, graph, layer2nodes)
     end
 
     @objective(m, Min, sum(crossings, layer2nodes))
-    optimize!(m)
-    @show termination_status(m)
-    @show objective_value(m)
-
-    # for debugging of solutions  #############
-    global last_m = m
-    global last_befores_vars = befores_vars
-    #############################
+    return m, node_is_before
+end
     
+
+
+function order_layers!(layer2nodes, is_before)
     # Cunning trick: we need to go from the `before` matrix to an actual order list
     # we can do this by sorting when having `lessthan` read from the `before` matrix
-    is_before_func(n1, n2) = Bool(value(node_is_before[n1][n2]))
+    is_before_func(n1, n2) = Bool(value(is_before[n1][n2]))
     for layer in layer2nodes
-        #==
-        for n1 in layer, n2 in layer
-            n1 === n2 && continue
-            is_before = Bool(value(node_is_before[n1][n2]))
-            is_before && println("$n1 < $n2")
-        end
-        ==#
         sort!(layer; lt=is_before_func)
-    end    
+    end
+    return layer2nodes
 end
 
-#TODO: use this to find all equal solutions then they can all be passed to the arranging function
-function find_next_best_ordering_solution!(m, befores_vars)
+"""
+    forbid_solution!(m, is_before)
+
+Modifies the JuMP model `m` to forbid the solution present in `is_before`.
+`is_before` must contain solved variables.
+"""
+function forbid_solution!(m, is_before)
     cur_trues = AffExpr(0)
     total_trues = 0
-    for var in befores_vars(m)
-        if value(var) > 0.5 
-            add_to_expression!(cur_trues, var)
-            total_trues += 1
-            print(var)
+    for var_list in is_before
+        for var in var_list
+            if value(var) > 0.5 
+                add_to_expression!(cur_trues, var)
+                total_trues += 1
+            end
         end
     end
     # for it to be a different order some of the ones that are currently true must swap to being false
     @constraint(m, sum(cur_trues) <= total_trues - 1)
         
-    optimize!(m)
-    @show termination_status(m)
-    @show objective_value(m)
+    return m
 end
 
-#==
-function assign_coordinates_naive(graph, layer2nodes)
-    xs = Vector{Float64}(undef, nv(graph))
-    ys = Vector{Float64}(undef, nv(graph))
-    for (xi, layer) in enumerate(layer2nodes)
-        for (yi, node) in enumerate(layer)
-            xs[node] = xi
-            ys[node] = yi - length(layer)/2
-        end
-    end
-    return xs, ys
-end
-==#
+"""
+    assign_coordinates(graph, layer2nodes)
 
-
+Works out the `x` and `y` coordinates for each node in the `graph`.
+This is via formulating the problem as a QP, and minimizing total distance
+of links.
+It maintains the order given in `layer2nodes`s.
+returns: `xs, ys, total_distance`
+"""
 function assign_coordinates(graph, layer2nodes)
     m = Model(Ipopt.Optimizer)
     set_silent(m)
@@ -148,8 +188,7 @@ function assign_coordinates(graph, layer2nodes)
 
     @objective(m, Min, total_distance);
     optimize!(m)
-    @show termination_status(m)
-    @show objective_value(m)
+    score = objective_value(m)
 
     ###
     xs = Vector{Float64}(undef, nv(graph))
@@ -160,5 +199,5 @@ function assign_coordinates(graph, layer2nodes)
             ys[node] = value(node2y[node])
         end
     end
-    return xs, ys
+    return xs, ys, score
 end

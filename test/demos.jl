@@ -24,7 +24,7 @@ end
     @testset "$graph_name" for graph_name in names(Examples; all=true)
         graph = getfield(Examples, graph_name)
         graph isa AbstractGraph || continue  # skip e.g. `eval`
-        ref_filename = joinpath(@__DIR__, "references", string(layout), "$graph_name.png")
+        ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "$graph_name.png")
         mkpath(dirname(ref_filename))
         @plottest quick_plot_solve(layout, graph) ref_filename true 0.0001
     end
