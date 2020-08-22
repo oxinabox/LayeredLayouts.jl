@@ -53,7 +53,9 @@ module Examples
     add_edge!(sankey_3twos, 3, 6, 1.0)
     add_edge!(sankey_3twos, 4, 5, 10.0)
 
-    small_depgraph = SimpleDiGraph(Edge.([
+    tree = SimpleDiGraph(Edge.([1 => 2, 2 => 3, 4 => 5, 4 => 6, 4 => 7, 4 => 8, 4 => 9, 4 => 10, 5 => 11, 5 => 12, 8 => 15, 8 => 16, 8 => 17, 8 => 18, 8 => 19, 9 => 20, 9 => 21, 10 => 22, 12 => 13, 13 => 14, 23 => 4, 23 => 24, 23 => 25, 23 => 26, 23 => 27, 23 => 28, 23 => 29, 23 => 30, 23 => 31, 28 => 32, 28 => 33, 29 => 35, 30 => 1, 30 => 38, 31 => 40, 33 => 34, 35 => 36, 35 => 37, 38 => 39, 40 => 41, 41 => 42]))
+
+    tiny_depgraph = SimpleDiGraph(Edge.([
         1 => 2
         2 => 4
         2 => 5
@@ -70,7 +72,7 @@ module Examples
     ]))
 
 
-    medium_depgraph = SimpleDiGraph(Edge.([
+    large_depgraph = SimpleDiGraph(Edge.([
         1 => 2
         2 => 3
         3 => 4
@@ -202,7 +204,7 @@ module Examples
         2 => 38
     ]))
 
-    large_depgraph = SimpleDiGraph(Edge.([
+    extra_large_depgraph = SimpleDiGraph(Edge.([
         1 => 2
         2 => 3
         3 => 4

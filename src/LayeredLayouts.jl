@@ -1,6 +1,7 @@
 module LayeredLayouts
 using Dates
 using JuMP
+using ECOS
 using Ipopt
 using Cbc
 using IterTools: IterTools

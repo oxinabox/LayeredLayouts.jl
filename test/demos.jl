@@ -20,12 +20,25 @@ quick_plot_solve(layout, graph) = quick_plot(graph, solve_positions(layout, grap
     @plottest quick_plot(SimpleDiGraph(Edge.([1=>2, 2=>3])), [1,2,5], [1,2,3]) ref_filename true 0.0001
 end
 
-@testset "$layout Demos" for layout in (OptimalSugiyama(), LayeredMinDistOne())
-    @testset "$graph_name" for graph_name in names(Examples; all=true)
+function test_example(layout, graph_name)
+    @testset "$graph_name" begin
         graph = getfield(Examples, graph_name)
-        graph isa AbstractGraph || continue  # skip e.g. `eval`
         ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "$graph_name.png")
         mkpath(dirname(ref_filename))
         @plottest quick_plot_solve(layout, graph) ref_filename true 0.0001
     end
+end
+
+@testset "$layout Demos" for layout in (OptimalSugiyama(), LayeredMinDistOne())
+    test_example(layout, :cross)
+    test_example(layout, :loop)
+    test_example(layout, :medium_pert)
+    test_example(layout, :sankey_3twos)
+    test_example(layout, :two_lines)
+    test_example(layout, :xcross)
+
+    test_example(layout, :tree)
+
+    #test_example(layout, :large_depgraph)  # too big
+    #test_example(layout, :extra_large_depgraph)  # too big
 end

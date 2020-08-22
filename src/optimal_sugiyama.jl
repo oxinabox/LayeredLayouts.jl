@@ -160,34 +160,42 @@ It maintains the order given in `layer2nodes`s.
 returns: `xs, ys, total_distance`
 """
 function assign_coordinates(graph, layer2nodes)
-    m = Model(Ipopt.Optimizer)
+    m = Model(ECOS.Optimizer)
     set_silent(m)
     set_optimizer_attribute(m, "print_level", 0)  # TODO this can be deleted once the version of IPOpt that actually supports `set_silent` is released
 
     node2y = Dict{Int, VariableRef}()
     for (layer, nodes) in enumerate(layer2nodes)
-        prev_y = -1.0
-        for node in nodes
+        first_node, other_nodes = Iterators.peel(nodes)
+        prev_y = node2y[first_node] = @variable(m, base_name="y_$first_node")
+        for node in other_nodes
             # each must be greater than the last, with a gap of 1 unit
             y = @variable(m, base_name="y_$node")
             @constraint(m, prev_y + 1.0 <= y)
-            node2y[node] = y
-            prev_y = y
+            prev_y = node2y[node] = y
         end
     end
 
-    weights_mat = weights(graph)
-    total_distance = QuadExpr(AffExpr(0.0))
+    all_distances = AffExpr[]
+    # minimze link distances
     for cur in vertices(graph)
         for out in outneighbors(graph, cur)
-            w = weights_mat[cur, out]
-            distance = (node2y[cur] - node2y[out])^2
-            add_to_expression!(total_distance, w, distance)
-        end 
+            distance = (node2y[cur] - node2y[out])
+            push!(all_distances, distance)
+        end
+        # to prevent going way off-sqcale, also keep things near x-axis
     end
-
+    # for first layer minimize distance to origin
+    for cur in first(layer2nodes)
+        distance = node2y[cur]
+        push!(all_distances, distance)
+    end
+    @variable(m, total_distance)
+    distance_cone = [1; total_distance; all_distances]
+    @constraint(m, distance_cone in RotatedSecondOrderCone())
     @objective(m, Min, total_distance);
     optimize!(m)
+    #termination_status(m)
     score = objective_value(m)
 
     ###
