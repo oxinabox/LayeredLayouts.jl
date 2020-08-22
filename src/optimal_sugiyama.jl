@@ -19,7 +19,8 @@ In 2018 IEEE Pacific Visualization Symposium (PacificVis) (pp. 135-139). IEEE.
    If you have a `time_limit` greater than `Second(0)` set then the result is no longer determenistic.
    Note also that this is heavily affected by first call compilation time.
  - `crossing_performance_tweaks` set to true to add extra constraints that in theory should make
-   the optimization easier. Zarate et al, equationms 8 and 9 specifically.
+   the optimization easier. Zarate et al, equations 8 and 9 specifically.
+   Testing on example problems with Cbc solver seems to suggest they don't help and may make it worse.
 """
 Base.@kwdef struct OptimalSugiyama <: AbstractLayout
     time_limit::Dates.Period = Dates.Second(0)
@@ -78,7 +79,7 @@ Returns:
 """
 function ordering_problem(layout::OptimalSugiyama, graph, layer2nodes)
     m = Model(Cbc.Optimizer)
-    set_silent(m)
+    #set_silent(m)
     set_optimizer_attribute(m, "seconds", 600.0)
     set_optimizer_attribute(m, "threads", 8)
 
@@ -111,7 +112,11 @@ function ordering_problem(layout::OptimalSugiyama, graph, layer2nodes)
             for dst1 in outneighbors(graph, src1), dst2 in outneighbors(graph, src2)
                 # Can't cross if share end-point 
                 (src1 === src2 || dst1 === dst2) && continue
-                crossing = @variable(m, binary=true, base_name="cross $src1-$dst2 x $src1-$dst2")
+                # Zarate et al section "Further improvements with branching priorities"
+                # we don't make this binary even though it is, because that makes the branchs happen
+                # at wrong places. It only needs to branch the `before_*` variables.
+                # the crossing will be binary as a result
+                crossing = @variable(m, binary=false, integer=false, base_name="cross $src1-$dst2 x $src1-$dst2")
                 get!(TDict{VariableRef}, crossing_vars, (src1, dst1))[src2, dst2] = crossing
                 # two edges cross if the src1 is before scr2; but dst1 is after dest2
                 @constraint(m, node_is_before[src1][src2] + node_is_before[dst2][dst1] - 1 <= crossing)
@@ -145,6 +150,7 @@ function ordering_problem(layout::OptimalSugiyama, graph, layer2nodes)
     end
 
     @objective(m, Min, sum(crossings, layer2nodes))
+    @show m
     return m, node_is_before
 end
     
