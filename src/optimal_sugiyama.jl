@@ -79,8 +79,8 @@ Returns:
 """
 function ordering_problem(layout::OptimalSugiyama, graph, layer2nodes)
     m = Model(Cbc.Optimizer)
-    #set_silent(m)
-    set_optimizer_attribute(m, "seconds", 600.0)
+    set_silent(m)
+    set_optimizer_attribute(m, "seconds", 600.0)  # just let it error if it will take longer than this
     set_optimizer_attribute(m, "threads", 8)
 
     T = JuMP.Containers.DenseAxisArray{VariableRef,1,Tuple{Vector{Int64}},Tuple{Dict{Int64,Int64}}}
@@ -150,7 +150,7 @@ function ordering_problem(layout::OptimalSugiyama, graph, layer2nodes)
     end
 
     @objective(m, Min, sum(crossings, layer2nodes))
-    @show m
+    #@show m
     return m, node_is_before
 end
     
