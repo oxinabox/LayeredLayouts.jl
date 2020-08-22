@@ -15,7 +15,7 @@
 struct OptimalSugiyama <: AbstractLayout
     time_limit::Dates.Period
 end
-OptimalSugiyama() = OptimalSugiyama(Dates.Second(1))
+OptimalSugiyama() = OptimalSugiyama(Dates.Second(0))
 
 function solve_positions(layout::OptimalSugiyama, original_graph)
     graph = copy(original_graph)
