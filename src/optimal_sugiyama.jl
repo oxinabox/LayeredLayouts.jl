@@ -1,6 +1,13 @@
 """
     OptimalSugiyama
 
+Sugiyaqma style layout for DAGs and Sankey diagrams.
+Based on
+
+Zarate, D. C., Le Bodic, P., Dwyer, T., Gange, G., & Stuckey, P. (2018, April).
+Optimal sankey diagrams via integer programming.
+In 2018 IEEE Pacific Visualization Symposium (PacificVis) (pp. 135-139). IEEE.
+
 # Fields
  - `time_limit::Dates.Period`: how long to spend trying alternative orderings.
    There are often many possible orderings that have the same amount of crossings.
@@ -11,11 +18,14 @@
    attempts will be made.).
    If you have a `time_limit` greater than `Second(0)` set then the result is no longer determenistic.
    Note also that this is heavily affected by first call compilation time.
+ - `crossing_performance_tweaks` set to true to add extra constraints that in theory should make
+   the optimization easier. Zarate et al, equationms 8 and 9 specifically.
 """
-struct OptimalSugiyama <: AbstractLayout
-    time_limit::Dates.Period
+Base.@kwdef struct OptimalSugiyama <: AbstractLayout
+    time_limit::Dates.Period = Dates.Second(0)
+    crossing_performance_tweaks::Bool = false
 end
-OptimalSugiyama() = OptimalSugiyama(Dates.Second(0))
+
 
 function solve_positions(layout::OptimalSugiyama, original_graph)
     graph = copy(original_graph)
@@ -35,7 +45,7 @@ function solve_positions(layout::OptimalSugiyama, original_graph)
 
         optimize!(ordering_model)
         # No need to keep banning solutions if not finding optimal ones anymore
-        termination_status(ordering_model) != MOI.OPTIMAL && break
+        round > 1 && termination_status(ordering_model) != MOI.OPTIMAL && break
         num_crossings = objective_value(ordering_model)
         # we are not interested in arrangements that have more crossings, only in 
         # alternatives with same number of crossings.
@@ -66,9 +76,11 @@ Returns:
    which once solved will have `value(is_before[n1][n2]) == true` 
    if `n1` is best arrange before `n2`.
 """
-function ordering_problem(::OptimalSugiyama, graph, layer2nodes)
+function ordering_problem(layout::OptimalSugiyama, graph, layer2nodes)
     m = Model(Cbc.Optimizer)
     set_silent(m)
+    set_optimizer_attribute(m, "seconds", 600.0)
+    set_optimizer_attribute(m, "threads", 8)
 
     T = JuMP.Containers.DenseAxisArray{VariableRef,1,Tuple{Vector{Int64}},Tuple{Dict{Int64,Int64}}}
     node_is_before = Vector{T}(undef, nv(graph))
@@ -90,13 +102,17 @@ function ordering_problem(::OptimalSugiyama, graph, layer2nodes)
     end
 
     weights_mat = weights(graph)
+    
     function crossings(src_layer)
         total = AffExpr(0)
+        TDict{V} = Dict{Tuple{Int,Int}, V}
+        crossing_vars = TDict{TDict{VariableRef}}()
         for src1 in src_layer, src2 in src_layer
             for dst1 in outneighbors(graph, src1), dst2 in outneighbors(graph, src2)
                 # Can't cross if share end-point 
                 (src1 === src2 || dst1 === dst2) && continue
                 crossing = @variable(m, binary=true, base_name="cross $src1-$dst2 x $src1-$dst2")
+                get!(TDict{VariableRef}, crossing_vars, (src1, dst1))[src2, dst2] = crossing
                 # two edges cross if the src1 is before scr2; but dst1 is after dest2
                 @constraint(m, node_is_before[src1][src2] + node_is_before[dst2][dst1] - 1 <= crossing)
                 
@@ -106,6 +122,23 @@ function ordering_problem(::OptimalSugiyama, graph, layer2nodes)
                 w2 = weights_mat[src2, dst2]
                 area = w1*w2
                 add_to_expression!(total, area, crossing)
+            end
+        end
+
+        # perfomance optimizations based on Zarate eq 8 and 9
+        if layout.crossing_performance_tweaks 
+            for ((u1,v1), other_edges) in crossing_vars
+                for ((u2, v2), c1) in other_edges
+                    c2 = crossing_vars[(u2,v2)][(u1,v1)]
+                    @constraint(m, c1==c2)  # Zarate eq 8
+
+                    if nothing !== (cxd = get(crossing_vars, (u1,v2), nothing))
+                        if nothing !== (cx = get(cxd, (u2,v1), nothing))
+                            # cx = crossing_vars[(u1,v2)][(u2,v1)]
+                            @constraint(m, c1 + cx == 1)# Zarate eq 9
+                        end
+                    end
+                end
             end
         end
         return total
