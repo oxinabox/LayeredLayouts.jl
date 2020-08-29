@@ -29,7 +29,7 @@ function test_example(layout, graph_name)
     end
 end
 
-@testset "$layout Demos" for layout in (OptimalSugiyama(), LayeredMinDistOne())
+@testset "$layout Demos" for layout in (OptimalSugiyama(),)# LayeredMinDistOne())
     test_example(layout, :cross)
     test_example(layout, :loop)
     test_example(layout, :medium_pert)

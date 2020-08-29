@@ -23,8 +23,10 @@ In 2018 IEEE Pacific Visualization Symposium (PacificVis) (pp. 135-139). IEEE.
    Testing on example problems with Cbc solver seems to suggest they don't help and may make it worse.
 """
 Base.@kwdef struct OptimalSugiyama <: AbstractLayout
-    time_limit::Dates.Period = Dates.Second(0)
+    time_limit::Dates.Period = Dates.Second(1)
     crossing_performance_tweaks::Bool = false
+    ordering_solver::Any = ()->Cbc.Optimizer(; randomSeed=1, randomCbcSeed=1)
+    arranging_solver::Any = ECOS.Optimizer
 end
 
 
@@ -55,7 +57,7 @@ function solve_positions(layout::OptimalSugiyama, original_graph)
         order_layers!(layer2nodes, is_before)
 
         # 3. Node Arrangement
-        xs, ys, total_distance = assign_coordinates(graph, layer2nodes)
+        xs, ys, total_distance = assign_coordinates(layout, graph, layer2nodes)
         if total_distance < min_total_distance
             min_total_distance = total_distance
             best_pos = (xs, ys)
@@ -78,7 +80,7 @@ Returns:
    if `n1` is best arrange before `n2`.
 """
 function ordering_problem(layout::OptimalSugiyama, graph, layer2nodes)
-    m = Model(Cbc.Optimizer)
+    m = Model(layout.ordering_solver)
     set_silent(m)
     set_optimizer_attribute(m, "seconds", 600.0)  # just let it error if it will take longer than this
     set_optimizer_attribute(m, "threads", 8)
@@ -198,8 +200,8 @@ of links.
 It maintains the order given in `layer2nodes`s.
 returns: `xs, ys, total_distance`
 """
-function assign_coordinates(graph, layer2nodes)
-    m = Model(ECOS.Optimizer)
+function assign_coordinates(layout, graph, layer2nodes)
+    m = Model(layout.arranging_solver)
     set_silent(m)
     set_optimizer_attribute(m, "print_level", 0)  # TODO this can be deleted once the version of IPOpt that actually supports `set_silent` is released
 
