@@ -13,6 +13,8 @@ export solve_positions
 
 abstract type AbstractLayout end
 
+include("utils.jl")
+
 include("graph_properties.jl")
 include("layering.jl")
 
