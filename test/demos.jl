@@ -13,7 +13,7 @@ function quick_plot(graph, xs, ys)
     end
 end
 
-quick_plot_solve(layout, graph) = quick_plot(graph, solve_positions(layout, graph)...) 
+quick_plot_solve(layout, graph) = quick_plot(graph, solve_positions(layout, graph)...)
 
 @testset "quick_plot" begin
     ref_filename =  joinpath(@__DIR__, "references", "test_utils", "$quick_plot.png")
@@ -29,7 +29,7 @@ function test_example(layout, graph_name)
     end
 end
 
-@testset "$layout Demos" for layout in (OptimalSugiyama(),)# LayeredMinDistOne())
+@testset "$layout Demos" for layout in (Zarate(),)# LayeredMinDistOne())
     test_example(layout, :cross)
     test_example(layout, :loop)
     test_example(layout, :medium_pert)

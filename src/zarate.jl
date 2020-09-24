@@ -1,7 +1,7 @@
 """
-    OptimalSugiyama
+    Zarate
 
-Sugiyaqma style layout for DAGs and Sankey diagrams.
+A Sugiyaqma style layout for DAGs and Sankey diagrams.
 Based on
 
 Zarate, D. C., Le Bodic, P., Dwyer, T., Gange, G., & Stuckey, P. (2018, April).
@@ -19,7 +19,7 @@ In 2018 IEEE Pacific Visualization Symposium (PacificVis) (pp. 135-139). IEEE.
    If you have a `time_limit` greater than `Second(0)` set then the result is no longer determenistic.
    Note also that this is heavily affected by first call compilation time.
 """
-Base.@kwdef struct OptimalSugiyama <: AbstractLayout
+Base.@kwdef struct Zarate <: AbstractLayout
     time_limit::Dates.Period = Dates.Second(1)
     crossing_performance_tweaks::Bool = false
     ordering_solver::Any = ()->Cbc.Optimizer(; randomSeed=1, randomCbcSeed=1, seconds=600.0)
@@ -27,7 +27,7 @@ Base.@kwdef struct OptimalSugiyama <: AbstractLayout
 end
 
 
-function solve_positions(layout::OptimalSugiyama, original_graph)
+function solve_positions(layout::Zarate, original_graph)
     graph = copy(original_graph)
 
     # 1. Layer Assigment
@@ -66,7 +66,7 @@ function solve_positions(layout::OptimalSugiyama, original_graph)
 end
 
 """
-    ordering_problem(::OptimalSugiyama, graph, layer2nodes)
+    ordering_problem(::Zarate, graph, layer2nodes)
 
 Formulates the problem of working out optimal ordering as a MILP.
 
@@ -76,7 +76,7 @@ Returns:
    which once solved will have `value(is_before[n1][n2]) == true`
    if `n1` is best arrange before `n2`.
 """
-function ordering_problem(layout::OptimalSugiyama, graph, layer2nodes)
+function ordering_problem(layout::Zarate, graph, layer2nodes)
     m = Model(layout.ordering_solver)
     set_silent(m)
 
