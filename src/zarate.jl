@@ -20,9 +20,8 @@ In 2018 IEEE Pacific Visualization Symposium (PacificVis) (pp. 135-139). IEEE.
    Note also that this is heavily affected by first call compilation time.
 """
 Base.@kwdef struct Zarate <: AbstractLayout
-    time_limit::Dates.Period = Dates.Second(1)
-    crossing_performance_tweaks::Bool = false
-    ordering_solver::Any = ()->Cbc.Optimizer(; randomSeed=1, randomCbcSeed=1, seconds=600.0)
+    time_limit::Dates.Period = Dates.Second(0)
+    ordering_solver::Any = ()->Cbc.Optimizer(; randomSeed=1, randomCbcSeed=1)
     arranging_solver::Any = ECOS.Optimizer
 end
 
