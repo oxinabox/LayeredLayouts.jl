@@ -17,7 +17,7 @@ quick_plot_solve(layout, graph) = quick_plot(graph, solve_positions(layout, grap
 
 @testset "quick_plot" begin
     ref_filename =  joinpath(@__DIR__, "references", "test_utils", "$quick_plot.png")
-    @plottest quick_plot(SimpleDiGraph(Edge.([1=>2, 2=>3])), [1,2,5], [1,2,3]) ref_filename true 0.0001
+    @plottest quick_plot(SimpleDiGraph(Edge.([1=>2, 2=>3])), [1,2,5], [1,2,3]) ref_filename true 0.05
 end
 
 function test_example(layout, graph_name, tol=0.05)
