@@ -20,12 +20,12 @@ quick_plot_solve(layout, graph) = quick_plot(graph, solve_positions(layout, grap
     @plottest quick_plot(SimpleDiGraph(Edge.([1=>2, 2=>3])), [1,2,5], [1,2,3]) ref_filename true 0.0001
 end
 
-function test_example(layout, graph_name)
+function test_example(layout, graph_name, tol=0.05)
     @testset "$graph_name" begin
         graph = getfield(Examples, graph_name)
         ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "$graph_name.png")
         mkpath(dirname(ref_filename))
-        @plottest quick_plot_solve(layout, graph) ref_filename true 0.05
+        @plottest quick_plot_solve(layout, graph) ref_filename true tol
     end
 end
 
@@ -37,7 +37,7 @@ end
     test_example(layout, :two_lines)
     test_example(layout, :xcross)
 
-    test_example(layout, :tree)
+    test_example(layout, :tree, 0.07)
 
     #test_example(layout, :large_depgraph)  # too big
     #test_example(layout, :extra_large_depgraph)  # too big
