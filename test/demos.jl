@@ -25,7 +25,7 @@ function test_example(layout, graph_name)
         graph = getfield(Examples, graph_name)
         ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "$graph_name.png")
         mkpath(dirname(ref_filename))
-        @plottest quick_plot_solve(layout, graph) ref_filename true 0.005
+        @plottest quick_plot_solve(layout, graph) ref_filename true 0.05
     end
 end
 
