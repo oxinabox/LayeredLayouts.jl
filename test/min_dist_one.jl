@@ -1,6 +1,4 @@
+@plottest quick_plot_solve(LayeredMinDistOne(), Examples.medium_pert) ref"medium_pert"
 
-ref(fn) = joinpath(@__DIR__, "references", fn * ".png")
-
-xs, ys = solve_positions(LayeredMinDistOne(), Examples.medium_pert)
-
-@plottest quick_plot(Examples.medium_pert, xs, ys) ref("1")
+# Lays out very poorly due to running out of iterations
+@plottest quick_plot_solve(LayeredMinDistOne(), Examples.chainrule_dependants) ref"chainrule_dependants"

@@ -4,10 +4,8 @@ using LayeredLayouts
 using Test
 using VisualRegressionTests
 
-@testset "LayeredLayouts.jl" begin
-    include("test_utils.jl")
-    include("examples.jl")
+include("examples.jl")
 
-    include("min_dist_one.jl")
-    
+@testset "LayeredLayouts.jl" begin
+    include("demos.jl")
 end
