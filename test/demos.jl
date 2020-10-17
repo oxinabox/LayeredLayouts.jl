@@ -29,7 +29,7 @@ function test_example(layout, graph_name, tol=0.05)
     end
 end
 
-@testset "$layout Demos" for layout in (Zarate(),)# LayeredMinDistOne())
+@testset "$layout Demos" for layout in (Zarate(),)
     test_example(layout, :cross)
     test_example(layout, :loop)
     test_example(layout, :medium_pert)

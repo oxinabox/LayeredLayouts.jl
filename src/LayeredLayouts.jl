@@ -18,7 +18,6 @@ include("utils.jl")
 include("graph_properties.jl")
 include("layering.jl")
 
-include("min_dist_one.jl")
 include("zarate.jl")
 
 end
