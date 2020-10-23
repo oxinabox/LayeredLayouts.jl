@@ -1,5 +1,5 @@
 is_dag(g) = is_directed(g) && !is_cyclic(g)
-dag_or_error(g) = is_dag(g) || DomainError(g, "Only Directed Acylic Graphs are supported")
+dag_or_error(g) = is_dag(g) || throw(DomainError(g, "Only Directed Acylic Graphs are supported"))
 
 
 sources(graph) = findall(iszero, indegree(graph))

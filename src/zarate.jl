@@ -31,7 +31,7 @@ function solve_positions(layout::Zarate, original_graph)
 
     # 1. Layer Assigment
     layer2nodes = layer_by_longest_path_to_source(graph)
-    is_dummy_mask = add_dummy_nodes!(graph, layer2nodes)
+    is_dummy_mask, edge_to_path = add_dummy_nodes!(graph, layer2nodes)
 
     # 2. Layer Ordering
     start_time = Dates.now()
@@ -61,7 +61,7 @@ function solve_positions(layout::Zarate, original_graph)
         Dates.now() - start_time > layout.time_limit && break
     end
     xs, ys = best_pos
-    return xs[.!is_dummy_mask], ys[.!is_dummy_mask]
+    return xs[.!is_dummy_mask], ys[.!is_dummy_mask], Dict(edge => (xs[path], ys[path]) for (edge, path) in edge_to_path)
 end
 
 """
@@ -206,13 +206,13 @@ function assign_coordinates(layout, graph, layer2nodes)
     end
 
     all_distances = AffExpr[]
-    # minimze link distances
+    # minimize link distances
     for cur in vertices(graph)
         for out in outneighbors(graph, cur)
             distance = (node2y[cur] - node2y[out])
             push!(all_distances, distance)
         end
-        # to prevent going way off-sqcale, also keep things near x-axis
+        # to prevent going way off-scale, also keep things near x-axis
     end
     # for first layer minimize distance to origin
     for cur in first(layer2nodes)
