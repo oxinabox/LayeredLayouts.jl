@@ -27,10 +27,11 @@ function add_dummy_nodes!(graph, layer2nodes)
     node2layer = node2layer_lookup(layer2nodes)  # doesn't have dummy nodes, doesn't need them
     for cur_node in vertices(graph)
         cur_layer = node2layer[cur_node]
-        for out_node in copy(outneighbors(graph, cur_node))  # need to copy as outwise will mutate when the graph is mutated
+        for out_edge in filter(e -> e.src == cur_node, collect(edges(graph)))  # need to copy as outwise will mutate when the graph is mutated
+            out_node = out_edge.dst 
             out_layer = node2layer[out_node]
             cur_layer < out_layer || throw(DomainError(node2layer, "Layer assigmenment must be strictly monotonic"))
-            path = edge_to_paths[Edge(cur_node, out_node)]
+            path = get!(edge_to_paths, out_edge, eltype(graph)[])
             if out_layer != cur_layer + 1
                 rem_edge!(graph, cur_node, out_node) || error("removing edge failed")
                 prev_node = cur_node

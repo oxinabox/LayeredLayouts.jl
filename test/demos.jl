@@ -1,13 +1,12 @@
 "helper for testing"
-function quick_plot(graph, xs, ys)
+function quick_plot(graph, xs, ys, paths)
     nv(graph)==length(xs) == length(ys) || error("need 1 position per vertex")
     scatter(xs, ys; markeralpha=0, text=string.(vertices(graph)))
 
     weights_mat = weights(graph)
     # now draw connections
     for edge in edges(graph)
-        lxs = [xs[edge.src], xs[edge.dst]]
-        lys = [ys[edge.src], ys[edge.dst]]
+        lxs, lys = paths[edge]
         w = 5*weights_mat[edge.src, edge.dst]
         plot!(lxs, lys; linewidth=w, alpha=0.7, legend=false)
     end
@@ -17,7 +16,8 @@ quick_plot_solve(layout, graph) = quick_plot(graph, solve_positions(layout, grap
 
 @testset "quick_plot" begin
     ref_filename =  joinpath(@__DIR__, "references", "test_utils", "$quick_plot.png")
-    @plottest quick_plot(SimpleDiGraph(Edge.([1=>2, 2=>3])), [1,2,5], [1,2,3]) ref_filename true 0.05
+    paths = Dict(Edge(1, 2) => ([1, 2], [1, 2]), Edge(2, 3) => ([2, 5], [2, 3]))
+    @plottest quick_plot(SimpleDiGraph(Edge.([1=>2, 2=>3])), [1,2,5], [1,2,3], paths) ref_filename true 0.05
 end
 
 function test_example(layout, graph_name, tol=0.05)
