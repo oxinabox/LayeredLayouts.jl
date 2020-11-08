@@ -33,8 +33,11 @@ Returns:
  - `ys`: the ys coordinates of vertices in the layout
  - `paths`: a Dict which, for each edge in `graph`, contains a Tuple of coordinate vectors (xs, ys).
  
-The layout is calculated on a graph where dummy nodes can be added to the different layers. As a result, plotting edges as straight lines between two nodes can result in more crossings than optimal : edges should instead be routed through these different dummy nodes.
-`paths` contains for each edge, a Tuple of vectors, representing that route through the different nodes as x and y coordinates.
+The layout is calculated on a graph where dummy nodes can be added to the different layers. 
+As a result, plotting edges as straight lines between two nodes can result in 
+more crossings than optimal : edges should instead be routed through these different dummy nodes.
+`paths` contains for each edge, a Tuple of vectors, representing that route through the 
+different nodes as x and y coordinates.
 
 # Example:
 ```julia
