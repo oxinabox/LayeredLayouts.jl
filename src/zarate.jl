@@ -13,10 +13,10 @@ In 2018 IEEE Pacific Visualization Symposium (PacificVis) (pp. 135-139). IEEE.
    There are often many possible orderings that have the same amount of crossings.
    There is a chance that one of these will allow a better arrangement than others.
    Mostly the first solution tends to be very good.
-   By setting a `time_limit > Second(0)`, multiple will be tried til the time limit is exceeded.
+   By setting a `time_limit > Second(0)`, multiple will be tried until the time limit is exceeded.
    (Note: that this is not a maximum time, but rather a limit that once exceeded no more
    attempts will be made.).
-   If you have a `time_limit` greater than `Second(0)` set then the result is no longer determenistic.
+   If you have a `time_limit` greater than `Second(0)` set then the result is no longer deterministic.
    Note also that this is heavily affected by first call compilation time.
 """
 Base.@kwdef struct Zarate <: AbstractLayout
@@ -25,13 +25,39 @@ Base.@kwdef struct Zarate <: AbstractLayout
     arranging_solver::Any = ECOS.Optimizer
 end
 
+"""
+    solve_positions(::Zarate, graph)
 
+Returns:
+ - `xs`: the xs coordinates of vertices in the layout
+ - `ys`: the ys coordinates of vertices in the layout
+ - `paths`: a Dict which, for each edge in `graph`, contains a Tuple of coordinate vectors (xs, ys).
+ 
+The layout is calculated on a graph where dummy nodes can be added to the different layers. 
+As a result, plotting edges as straight lines between two nodes can result in 
+more crossings than optimal : edges should instead be routed through these different dummy nodes.
+`paths` contains for each edge, a Tuple of vectors, representing that route through the 
+different nodes as x and y coordinates.
+
+# Example:
+```julia
+using LightGraphs, Plots
+
+g = random_orientation_dag(complete_graph(5))
+xs, ys, paths = solve_positions(Zarate(), g)
+scatter(xs, ys)
+for e in edges(g)
+    e_xs, e_ys = paths[e]
+    plot!(e_xs, e_ys)
+end
+```
+"""
 function solve_positions(layout::Zarate, original_graph)
     graph = copy(original_graph)
 
     # 1. Layer Assigment
     layer2nodes = layer_by_longest_path_to_source(graph)
-    is_dummy_mask = add_dummy_nodes!(graph, layer2nodes)
+    is_dummy_mask, edge_to_path = add_dummy_nodes!(graph, layer2nodes)
 
     # 2. Layer Ordering
     start_time = Dates.now()
@@ -61,7 +87,7 @@ function solve_positions(layout::Zarate, original_graph)
         Dates.now() - start_time > layout.time_limit && break
     end
     xs, ys = best_pos
-    return xs[.!is_dummy_mask], ys[.!is_dummy_mask]
+    return xs[.!is_dummy_mask], ys[.!is_dummy_mask], Dict(edge => (xs[path], ys[path]) for (edge, path) in edge_to_path)
 end
 
 """
@@ -206,13 +232,13 @@ function assign_coordinates(layout, graph, layer2nodes)
     end
 
     all_distances = AffExpr[]
-    # minimze link distances
+    # minimize link distances
     for cur in vertices(graph)
         for out in outneighbors(graph, cur)
             distance = (node2y[cur] - node2y[out])
             push!(all_distances, distance)
         end
-        # to prevent going way off-sqcale, also keep things near x-axis
+        # to prevent going way off-scale, also keep things near x-axis
     end
     # for first layer minimize distance to origin
     for cur in first(layer2nodes)
