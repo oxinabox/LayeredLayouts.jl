@@ -105,8 +105,7 @@ function ordering_problem(layout::Zarate, graph, layer2nodes)
     m = Model(layout.ordering_solver)
     set_silent(m)
 
-    T = JuMP.Containers.DenseAxisArray{VariableRef,1,Tuple{Vector{Int64}},Tuple{JuMP.Containers._AxisLookup{Dict{Int64,Int64}}}}
-    node_is_before = Vector{T}(undef, nv(graph))
+    node_is_before = Vector{Any}(undef, nv(graph))
     for (layer, nodes) in enumerate(layer2nodes)
         before = @variable(m, [nodes, nodes], Bin, base_name="befores_$layer")
         for n1 in nodes
