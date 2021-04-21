@@ -23,7 +23,7 @@ function agree_with_opt_layer_assign!(layer_groups, graph, opt_layer_assign)
             curr_layer = findfirst(k .∈ layer_groups)
             if !isnothing(curr_layer)
                 if curr_layer >= l
-                    @warn "Ignored opt_layer_assign for node $k; dists[k] ($(dists[k])) > l ($l)"
+                    @warn "Ignored opt_layer_assign for node $k; curr layer ($curr_layer) > desired layer ($l)"
                 elseif any(has_edge(graph, k, v) for v in vcat(layer_groups[curr_layer:l]...))
                     error("opt_layer_assign node $k incompatible with edge order")
                 else
