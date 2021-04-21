@@ -26,6 +26,8 @@ function agree_with_opt_layer_assign!(layer_groups, graph, opt_layer_assign)
                     @warn "Ignored opt_layer_assign for node $k; curr layer ($curr_layer) > desired layer ($l)"
                 elseif any(has_edge(graph, k, v) for v in vcat(layer_groups[curr_layer:min(l, end)]...))
                     @warn "opt_layer_assign node $k incompatible with edge order"
+                elseif l > length(layer_groups)
+                    @warn "opt_layer_assign node $k optional layer larger than the available layers"
                 elseif curr_layer != l
                     filter!(x->x != k, layer_groups[curr_layer])
                     push!(layer_groups[l], k)
