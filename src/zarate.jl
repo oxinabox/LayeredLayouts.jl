@@ -35,7 +35,7 @@ Returns:
  - opt_layer_assign: dictionary specifying the requested custom layer for a given node.
 
 The layout is calculated on a graph where dummy nodes can be added to the different layers.
-As a result, plotting edges as straight lisnes between two nodes can result in
+As a result, plotting edges as straight lines between two nodes can result in
 more crossings than optimal : edges should instead be routed through these different dummy nodes.
 `paths` contains for each edge, a Tuple of vectors, representing that route through the
 different nodes as x and y coordinates.
