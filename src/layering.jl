@@ -1,9 +1,36 @@
 # This contains algorithms for breaking up a DAG into layers
-
-function layer_by_longest_path_to_source(graph)
+"Calculate the layer of each node"
+function layer_by_longest_path_to_source(graph, opt_layer_assign)
     dists = longest_paths(graph, sources(graph))
-    layer_groups = IterTools.groupby(i->dists[i], sort(vertices(graph), by=i->dists[i]))
-    return collect.(layer_groups)
+    layer_groups = collect.(IterTools.groupby(i->dists[i], sort(vertices(graph), by=i->dists[i])))
+    agree_with_opt_layer_assign!(layer_groups, graph, opt_layer_assign)
+    return layer_groups
+end
+
+"Correct the layer of each node, according to the optional parameter by user"
+function agree_with_opt_layer_assign!(layer_groups, graph, opt_layer_assign)
+    if length(opt_layer_assign) > 0
+        key_opt = collect(keys(opt_layer_assign))
+        values_opt = collect(values(opt_layer_assign))
+
+        opt_ids_by_layers = sortperm(collect(values(opt_layer_assign)), rev=true)
+        key_opt = key_opt[opt_ids_by_layers]
+        values_opt = values_opt[opt_ids_by_layers]
+
+        # change layers if needed
+        for (k, l) in zip(key_opt, values_opt)
+            #current layer of node
+            curr_layer = findfirst(k .∈ layer_groups)
+            if curr_layer >= l
+                @warn "Ignored opt_layer_assign for node $k; dists[k] ($(dists[k])) > l ($l)"
+            elseif any(has_edge(graph, k, v) for v in vcat(layer_groups[curr_layer:l]...))
+                error("opt_layer_assign node $k incompatible with edge order")
+            else
+                filter!(x->x != k, layer_groups[curr_layer])
+                push!(layer_groups[l], k)
+            end
+        end
+    end
 end
 
 
@@ -23,12 +50,12 @@ function add_dummy_nodes!(graph, layer2nodes)
     dag_or_error(graph)
     nondummy_nodes = vertices(graph)
     # mapping from edges in the original graph to paths in the graph with dummy nodes
-    edge_to_paths = Dict(e => eltype(graph)[] for e in edges(graph)) 
+    edge_to_paths = Dict(e => eltype(graph)[] for e in edges(graph))
     node2layer = node2layer_lookup(layer2nodes)  # doesn't have dummy nodes, doesn't need them
     for cur_node in vertices(graph)
         cur_layer = node2layer[cur_node]
         for out_edge in filter(e -> src(e) == cur_node, collect(edges(graph)))  # need to copy as outwise will mutate when the graph is mutated
-            out_node = out_edge.dst 
+            out_node = out_edge.dst
             out_layer = node2layer[out_node]
             cur_layer < out_layer || throw(DomainError(node2layer, "Layer assigmenment must be strictly monotonic"))
             path = get!(edge_to_paths, out_edge, eltype(graph)[])

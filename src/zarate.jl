@@ -32,9 +32,10 @@ Returns:
  - `xs`: the xs coordinates of vertices in the layout
  - `ys`: the ys coordinates of vertices in the layout
  - `paths`: a Dict which, for each edge in `graph`, contains a Tuple of coordinate vectors (xs, ys).
+ - opt_layer_assign: dictionary specifying the requested custom layer for a given node.
 
 The layout is calculated on a graph where dummy nodes can be added to the different layers.
-As a result, plotting edges as straight lines between two nodes can result in
+As a result, plotting edges as straight lisnes between two nodes can result in
 more crossings than optimal : edges should instead be routed through these different dummy nodes.
 `paths` contains for each edge, a Tuple of vectors, representing that route through the
 different nodes as x and y coordinates.
@@ -52,11 +53,12 @@ for e in edges(g)
 end
 ```
 """
-function solve_positions(layout::Zarate, original_graph)
+function solve_positions(layout::Zarate, original_graph;
+        opt_layer_assign::Dict{Int, Int} = Dict{Int, Int}())
     graph = copy(original_graph)
 
     # 1. Layer Assigment
-    layer2nodes = layer_by_longest_path_to_source(graph)
+    layer2nodes = layer_by_longest_path_to_source(graph, opt_layer_assign)
     is_dummy_mask, edge_to_path = add_dummy_nodes!(graph, layer2nodes)
 
     # 2. Layer Ordering
