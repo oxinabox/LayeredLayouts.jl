@@ -26,7 +26,7 @@ Base.@kwdef struct Zarate <: AbstractLayout
 end
 
 """
-    solve_positions(::Zarate, graph)
+    solve_positions(::Zarate, graph, opt_node_order)
 
 Returns:
  - `xs`: the xs coordinates of vertices in the layout
@@ -38,6 +38,8 @@ As a result, plotting edges as straight lines between two nodes can result in
 more crossings than optimal : edges should instead be routed through these different dummy nodes.
 `paths` contains for each edge, a Tuple of vectors, representing that route through the
 different nodes as x and y coordinates.
+
+opt_node_order: optional dictionary stating optional arguments for the nodes ordering in each layer
 
 # Example:
 ```julia
@@ -52,7 +54,8 @@ for e in edges(g)
 end
 ```
 """
-function solve_positions(layout::Zarate, original_graph)
+function solve_positions(layout::Zarate, original_graph;
+    opt_node_order::Dict{Int, Int} = Dict{Int, Int}())
     graph = copy(original_graph)
 
     # 1. Layer Assigment
@@ -64,7 +67,7 @@ function solve_positions(layout::Zarate, original_graph)
     min_total_distance = Inf
     min_num_crossing = Inf
     local best_pos
-    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes)
+    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes, opt_node_order)
     for round in 1:typemax(Int)
         round > 1 && forbid_solution!(ordering_model, is_before)
 
@@ -91,7 +94,7 @@ function solve_positions(layout::Zarate, original_graph)
 end
 
 """
-    ordering_problem(::Zarate, graph, layer2nodes)
+    ordering_problem(::Zarate, graph, layer2nodes, opt_node_order)
 
 Formulates the problem of working out optimal ordering as a MILP.
 
@@ -101,7 +104,7 @@ Returns:
    which once solved will have `value(is_before[n1][n2]) == true`
    if `n1` is best arrange before `n2`.
 """
-function ordering_problem(layout::Zarate, graph, layer2nodes)
+function ordering_problem(layout::Zarate, graph, layer2nodes, opt_node_order)
     m = Model(layout.ordering_solver)
     set_silent(m)
 
@@ -119,6 +122,13 @@ function ordering_problem(layout::Zarate, graph, layer2nodes)
                     # at most two of these 3 hold
                     @constraint(m , before[n1, n2] + before[n2, n3] + before[n3, n1] <= 2)
                 end
+            end
+        end
+
+        # add optional ordering
+        for (k, v) in opt_node_order #convention k > v
+            if (k in nodes) && (v in nodes)# ordering applies only if they belong to the same layer
+                @constraint(m , before[v, k] == 1)
             end
         end
     end
