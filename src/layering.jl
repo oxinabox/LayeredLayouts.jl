@@ -21,13 +21,15 @@ function agree_with_opt_layer_assign!(layer_groups, graph, opt_layer_assign)
         for (k, l) in zip(key_opt, values_opt)
             #current layer of node
             curr_layer = findfirst(k .∈ layer_groups)
-            if curr_layer >= l
-                @warn "Ignored opt_layer_assign for node $k; dists[k] ($(dists[k])) > l ($l)"
-            elseif any(has_edge(graph, k, v) for v in vcat(layer_groups[curr_layer:l]...))
-                error("opt_layer_assign node $k incompatible with edge order")
-            else
-                filter!(x->x != k, layer_groups[curr_layer])
-                push!(layer_groups[l], k)
+            if !isnothing(curr_layer)
+                if curr_layer >= l
+                    @warn "Ignored opt_layer_assign for node $k; dists[k] ($(dists[k])) > l ($l)"
+                elseif any(has_edge(graph, k, v) for v in vcat(layer_groups[curr_layer:l]...))
+                    error("opt_layer_assign node $k incompatible with edge order")
+                else
+                    filter!(x->x != k, layer_groups[curr_layer])
+                    push!(layer_groups[l], k)
+                end
             end
         end
     end
