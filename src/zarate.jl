@@ -26,19 +26,19 @@ Base.@kwdef struct Zarate <: AbstractLayout
 end
 
 """
-    solve_positions(::Zarate, graph)
+    solve_positions(::Zarate, graph; force_layer)
 
 Returns:
  - `xs`: the xs coordinates of vertices in the layout
  - `ys`: the ys coordinates of vertices in the layout
  - `paths`: a Dict which, for each edge in `graph`, contains a Tuple of coordinate vectors (xs, ys).
- - opt_layer_assign: dictionary specifying the requested custom layer for a given node.
 
 The layout is calculated on a graph where dummy nodes can be added to the different layers.
 As a result, plotting edges as straight lines between two nodes can result in
 more crossings than optimal : edges should instead be routed through these different dummy nodes.
 `paths` contains for each edge, a Tuple of vectors, representing that route through the
-different nodes as x and y coordinates.
+different nodes as x and y coordinates. `force_layer` specify the layer for each node
+e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
 
 # Example:
 ```julia
@@ -54,11 +54,11 @@ end
 ```
 """
 function solve_positions(layout::Zarate, original_graph;
-        opt_layer_assign::Dict{Int, Int} = Dict{Int, Int}())
+        force_layer::Vector{Pair{Int, Int}} = Vector{Pair{Int, Int}}())
     graph = copy(original_graph)
 
     # 1. Layer Assigment
-    layer2nodes = layer_by_longest_path_to_source(graph, opt_layer_assign)
+    layer2nodes = layer_by_longest_path_to_source(graph, force_layer)
     is_dummy_mask, edge_to_path = add_dummy_nodes!(graph, layer2nodes)
 
     # 2. Layer Ordering
