@@ -1,6 +1,6 @@
 # This contains algorithms for breaking up a DAG into layers
 "Calculate the layer of each node"
-function layer_by_longest_path_to_source(graph, opt_layer_assign)
+function layer_by_longest_path_to_source(graph, force_layer)
     dists = longest_paths(graph, sources(graph))
     force_layers!(graph, dists, force_layer
     layer_groups = collect.(IterTools.groupby(i->dists[i], sort(vertices(graph), by=i->dists[i])))
@@ -14,9 +14,9 @@ function force_layers!(graph, dists, force_layer::Vector{Pair{Int, Int}})
     for (node_id, target_layer) in ordered_forced_layers
         curr_layer = dists[node_id]
         if target_layer < curr_layer
-            @warn "Ignored opt_layer_assign for node $node_id; curr layer ($curr_layer) > desired layer ($target_layer)"
+            @warn "Ignored force_layer for node $node_id; curr layer ($curr_layer) > desired layer ($target_layer)"
         elseif any(dists[child] <= target_layer for child in outneighbors(graph, node_id))
-            @warn "Ignored opt_layer_assign for node $node_id; as placing it at $target_layer would place it on same layer, or later than it's children."
+            @warn "Ignored force_layer for node $node_id; as placing it at $target_layer would place it on same layer, or later than it's children."
         else
             dists[node_id] = target_layer
         end
