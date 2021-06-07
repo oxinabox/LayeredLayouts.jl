@@ -39,7 +39,8 @@ more crossings than optimal : edges should instead be routed through these diffe
 `paths` contains for each edge, a Tuple of vectors, representing that route through the
 different nodes as x and y coordinates.
 
-force_order: force indices in a given layer, e.g. `force_order = [3=>1, 2=>3]` forces node 3 in layer 1 and node 2 in layer 3
+force_order: this vector forces the ordering of the nodes in each layer,
+    e.g. `force_order = [3=>2, 1=>3]` forces node 3 to lay before node 2, and node 1 to lay before node 3
 
 # Example:
 ```julia
