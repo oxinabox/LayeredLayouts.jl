@@ -125,7 +125,7 @@ function ordering_problem(layout::Zarate, graph, layer2nodes, force_order)
             end
         end
 
-        # add optional ordering
+        # add user specifed ordering constraints
         for (k, v) in force_order #convention k > v
             if (k in nodes) && (v in nodes)# ordering applies only if they belong to the same layer
                 @constraint(m , before[v, k] == 1)
