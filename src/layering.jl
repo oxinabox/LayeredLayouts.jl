@@ -2,39 +2,26 @@
 "Calculate the layer of each node"
 function layer_by_longest_path_to_source(graph, opt_layer_assign)
     dists = longest_paths(graph, sources(graph))
+    force_layers!(graph, dists, force_layer
     layer_groups = collect.(IterTools.groupby(i->dists[i], sort(vertices(graph), by=i->dists[i])))
-    agree_with_opt_layer_assign!(layer_groups, graph, opt_layer_assign)
     return layer_groups
 end
 
 "Correct the layer of each node, according to the optional parameter by user"
-function agree_with_opt_layer_assign!(layer_groups, graph, opt_layer_assign)
-    if length(opt_layer_assign) > 0
-        key_opt = collect(keys(opt_layer_assign))
-        values_opt = collect(values(opt_layer_assign))
-
-        opt_ids_by_layers = sortperm(collect(values(opt_layer_assign)), rev=true)
-        key_opt = key_opt[opt_ids_by_layers]
-        values_opt = values_opt[opt_ids_by_layers]
-
-        # change layers if needed
-        for (k, l) in zip(key_opt, values_opt)
-            #current layer of node
-            curr_layer = findfirst(k .∈ layer_groups)
-            if !isnothing(curr_layer)
-                if curr_layer > l
-                    @warn "Ignored opt_layer_assign for node $k; curr layer ($curr_layer) > desired layer ($l)"
-                elseif any(has_edge(graph, k, v) for v in vcat(layer_groups[curr_layer:min(l, end)]...))
-                    @warn "opt_layer_assign node $k incompatible with edge order"
-                elseif l > length(layer_groups)
-                    @warn "opt_layer_assign node $k optional layer larger than the available layers"
-                elseif curr_layer != l
-                    filter!(x->x != k, layer_groups[curr_layer])
-                    push!(layer_groups[l], k)
-                end
-            end
+function force_layers!(graph, dists, force_layer::Vector{Pair{Int, Int}})
+    # must process from end to beginning as otherwise can't move things after to make space
+    ordered_forced_layers = sort(collect(force_layer), by=last; rev=true)
+    for (node_id, target_layer) in ordered_forced_layers
+        curr_layer = dists[node_id]
+        if target_layer < curr_layer
+            @warn "Ignored opt_layer_assign for node $node_id; curr layer ($curr_layer) > desired layer ($target_layer)"
+        elseif any(dists[child] <= target_layer for child in outneighbors(graph, node_id))
+            @warn "Ignored opt_layer_assign for node $node_id; as placing it at $target_layer would place it on same layer, or later than it's children."
+        else
+            dists[node_id] = target_layer
         end
     end
+    return dists
 end
 
 
