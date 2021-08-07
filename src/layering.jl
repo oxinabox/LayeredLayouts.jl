@@ -2,7 +2,7 @@
 "Calculate the layer of each node"
 function layer_by_longest_path_to_source(graph, force_layer)
     dists = longest_paths(graph, sources(graph))
-    force_layers!(graph, dists, force_layer
+    force_layers!(graph, dists, force_layer)
     layer_groups = collect.(IterTools.groupby(i->dists[i], sort(vertices(graph), by=i->dists[i])))
     return layer_groups
 end
