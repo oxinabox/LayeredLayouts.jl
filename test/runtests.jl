@@ -1,5 +1,5 @@
 using Plots
-using LightGraphs
+using Graphs
 using LayeredLayouts
 using Test
 using VisualRegressionTests
