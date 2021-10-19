@@ -41,7 +41,7 @@ different nodes as x and y coordinates.
 
 # Example:
 ```julia
-using LightGraphs, Plots
+using Graphs, Plots
 
 g = random_orientation_dag(complete_graph(5))
 xs, ys, paths = solve_positions(Zarate(), g)

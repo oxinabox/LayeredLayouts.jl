@@ -1,5 +1,8 @@
+# set headless environment for plots
+ENV["GKSwstype"] = "100"
+
 using Plots
-using LightGraphs
+using Graphs
 using LayeredLayouts
 using Test
 using VisualRegressionTests

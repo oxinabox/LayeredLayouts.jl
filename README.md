@@ -11,10 +11,11 @@ Presently it has one algorithm:
 [D. C. Zarate, P. L. Bodic, T. Dwyer, G. Gange and P. Stuckey, "Optimal Sankey Diagrams Via Integer Programming," _2018 IEEE Pacific Visualization Symposium (PacificVis)_, Kobe, 2018, pp. 135-139, doi: 10.1109/PacificVis.2018.00025.](https://ialab.it.monash.edu/~dwyer/papers/optimal-sankey-diagrams.pdf).
 Which is a Sugiyama style layout algorthm via full mixed integer programming.
 
+Starting from v0.2 `LayeredLayouts.jl` switches from `LightGraphs.jl` to `Graphs.jl` for graph representation. See this [discourse post](https://discourse.julialang.org/t/lightgraphs-jl-transition/69526/17) for more information. If you want to use `LightGraphs.jl` please specifically `] add LayeredLayouts@0.1`
 
 ### Usage
 ```julia
-julia> using LayeredLayouts, LightGraphs
+julia> using LayeredLayouts, Graphs
 
 julia> tiny_depgraph = SimpleDiGraph(Edge.([
            1 => 2;
@@ -30,7 +31,7 @@ julia> xs, ys
 ([1.0, 2.0, 1.0, 3.0, 3.0, 3.0, 2.0, 2.0, 4.0, 4.0, 4.0], [-0.500000683006983, -0.9285709647225431, 0.500000681452564, 0.40476260792712027, -0.5952375840605986, -1.5952379163280372, 3.0714291353124143, 2.0714290900138614, 1.404762745121713, 0.4047626078228009, -0.5952375294761111])
 
 julia> paths
-Dict{LightGraphs.SimpleGraphs.SimpleEdge{Int64},Tuple{Array{Float64,1},Array{Float64,1}}} with 13 entries:
+Dict{Graphs.SimpleGraphs.SimpleEdge{Int64},Tuple{Array{Float64,1},Array{Float64,1}}} with 13 entries:
   Edge 2 => 5  => ([2.0, 3.0], [-0.928571, -0.595238])
   Edge 3 => 8  => ([1.0, 2.0], [0.500001, 2.07143])
   Edge 3 => 5  => ([1.0, 2.0, 3.0], [0.500001, 0.0714291, -0.595238])
