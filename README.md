@@ -11,7 +11,7 @@ Presently it has one algorithm:
 [D. C. Zarate, P. L. Bodic, T. Dwyer, G. Gange and P. Stuckey, "Optimal Sankey Diagrams Via Integer Programming," _2018 IEEE Pacific Visualization Symposium (PacificVis)_, Kobe, 2018, pp. 135-139, doi: 10.1109/PacificVis.2018.00025.](https://ialab.it.monash.edu/~dwyer/papers/optimal-sankey-diagrams.pdf).
 Which is a Sugiyama style layout algorthm via full mixed integer programming.
 
-Starting from v0.2 `LayeredLayouts.jl` switches from `LightGraphs.jl` to `Graphs.jl` for graph representation. See this [discourse post](https://discourse.julialang.org/t/lightgraphs-jl-transition/69526/17) for more information. If you want to use `LightGraphs.jl` please specifically `] add LayeredLayouts@0.1`!
+Starting from v0.2 `LayeredLayouts.jl` switches from `LightGraphs.jl` to `Graphs.jl` for graph representation. See this [discourse post](https://discourse.julialang.org/t/lightgraphs-jl-transition/69526/17) for more information. If you want to use `LightGraphs.jl` please specifically `] add LayeredLayouts@0.1`
 
 ### Usage
 ```julia
