@@ -1,3 +1,6 @@
+# set headless environment for plots
+ENV["GKSwstype"] = "100"
+
 using Plots
 using Graphs
 using LayeredLayouts
