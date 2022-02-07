@@ -76,7 +76,7 @@ function solve_positions(layout::Zarate, original_graph;
     min_total_distance = Inf
     min_num_crossing = Inf
     local best_pos
-    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes)
+    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes; force_order=force_order)
     for round in 1:typemax(Int)
         round > 1 && forbid_solution!(ordering_model, is_before)
 
@@ -103,7 +103,7 @@ function solve_positions(layout::Zarate, original_graph;
 end
 
 """
-    ordering_problem(::Zarate, graph, layer2nodes)
+    ordering_problem(::Zarate, graph, layer2nodes; force_order)
 
 Formulates the problem of working out optimal ordering as a MILP.
 
@@ -113,7 +113,8 @@ Returns:
    which once solved will have `value(is_before[n1][n2]) == true`
    if `n1` is best arrange before `n2`.
 """
-function ordering_problem(layout::Zarate, graph, layer2nodes)
+function ordering_problem(layout::Zarate, graph, layer2nodes;
+        force_order=Vector{Pair{Int, Int}}())
     m = Model(layout.ordering_solver)
     set_silent(m)
 
@@ -131,6 +132,15 @@ function ordering_problem(layout::Zarate, graph, layer2nodes)
                     # at most two of these 3 hold
                     @constraint(m , before[n1, n2] + before[n2, n3] + before[n3, n1] <= 2)
                 end
+            end
+        end
+
+        # add user specifed ordering constraints
+        # for each pair in force_order, it is specified that the value must preceed the key
+        # Therefore: [3 (key or k) => 5 (value or v)] translates that 3 must preceed 5
+        for (k, v) in force_order  # convention k > v
+            if (k in nodes) && (v in nodes)  # ordering applies only if they belong to the same layer
+                @constraint(m , before[v, k] == 1)
             end
         end
     end
