@@ -1,5 +1,5 @@
 module Examples
-    using LightGraphs
+    using Graphs
     using SimpleWeightedGraphs
     medium_pert = SimpleDiGraph(Edge.([
         1 => 2
