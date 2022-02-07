@@ -26,7 +26,7 @@ Base.@kwdef struct Zarate <: AbstractLayout
 end
 
 """
-    solve_positions(::Zarate, graph; force_layer)
+    solve_positions(::Zarate, graph; force_layer, force_order)
 
 Returns:
  - `xs`: the xs coordinates of vertices in the layout
@@ -45,6 +45,10 @@ Optional arguments:
     specifies the layer for each node
     e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
 
+force_order: Vector{Pair{Int, Int}}
+    this vector forces the ordering of the nodes in each layer,
+    e.g. `force_order = [3=>2, 1=>3]` forces node 3 to lay before node 2, and node 1 to lay before node 3
+
 # Example:
 ```julia
 using Graphs, Plots
@@ -59,7 +63,8 @@ end
 ```
 """
 function solve_positions(layout::Zarate, original_graph;
-        force_layer = Vector{Pair{Int, Int}}())
+        force_layer = Vector{Pair{Int, Int}}(),
+        force_order = Vector{Pair{Int, Int}}())
     graph = copy(original_graph)
 
     # 1. Layer Assigment
