@@ -1,9 +1,27 @@
 # This contains algorithms for breaking up a DAG into layers
-
-function layer_by_longest_path_to_source(graph)
+"Calculate the layer of each node"
+function layer_by_longest_path_to_source(graph, force_layer)
     dists = longest_paths(graph, sources(graph))
-    layer_groups = IterTools.groupby(i->dists[i], sort(vertices(graph), by=i->dists[i]))
-    return collect.(layer_groups)
+    force_layers!(graph, dists, force_layer)
+    layer_groups = collect.(IterTools.groupby(i->dists[i], sort(vertices(graph), by=i->dists[i])))
+    return layer_groups
+end
+
+"Correct the layer of each node, according to the optional parameter by user"
+function force_layers!(graph, dists, force_layer::Vector{Pair{Int, Int}})
+    # must process from end to beginning as otherwise can't move things after to make space
+    ordered_forced_layers = sort(force_layer, by=last; rev=true)
+    for (node_id, target_layer) in ordered_forced_layers
+        curr_layer = dists[node_id]
+        if target_layer < curr_layer
+            @warn "Ignored force_layer for node $node_id; curr layer ($curr_layer) > desired layer ($target_layer)"
+        elseif any(dists[child] <= target_layer for child in outneighbors(graph, node_id))
+            @warn "Ignored force_layer for node $node_id; as placing it at $target_layer would place it on same layer, or later than it's children."
+        else
+            dists[node_id] = target_layer
+        end
+    end
+    return dists
 end
 
 
@@ -23,12 +41,12 @@ function add_dummy_nodes!(graph, layer2nodes)
     dag_or_error(graph)
     nondummy_nodes = vertices(graph)
     # mapping from edges in the original graph to paths in the graph with dummy nodes
-    edge_to_paths = Dict(e => eltype(graph)[] for e in edges(graph)) 
+    edge_to_paths = Dict(e => eltype(graph)[] for e in edges(graph))
     node2layer = node2layer_lookup(layer2nodes)  # doesn't have dummy nodes, doesn't need them
     for cur_node in vertices(graph)
         cur_layer = node2layer[cur_node]
         for out_edge in filter(e -> src(e) == cur_node, collect(edges(graph)))  # need to copy as outwise will mutate when the graph is mutated
-            out_node = out_edge.dst 
+            out_node = out_edge.dst
             out_layer = node2layer[out_node]
             cur_layer < out_layer || throw(DomainError(node2layer, "Layer assigmenment must be strictly monotonic"))
             path = get!(edge_to_paths, out_edge, eltype(graph)[])

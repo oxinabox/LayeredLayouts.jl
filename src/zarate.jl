@@ -26,7 +26,7 @@ Base.@kwdef struct Zarate <: AbstractLayout
 end
 
 """
-    solve_positions(::Zarate, graph)
+    solve_positions(::Zarate, graph; force_layer)
 
 Returns:
  - `xs`: the xs coordinates of vertices in the layout
@@ -38,6 +38,12 @@ As a result, plotting edges as straight lines between two nodes can result in
 more crossings than optimal : edges should instead be routed through these different dummy nodes.
 `paths` contains for each edge, a Tuple of vectors, representing that route through the
 different nodes as x and y coordinates.
+
+Optional arguments:
+
+`force_layer`: Vector{Pair{Int, Int}}
+    specifies the layer for each node
+    e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
 
 # Example:
 ```julia
@@ -52,11 +58,13 @@ for e in edges(g)
 end
 ```
 """
-function solve_positions(layout::Zarate, original_graph)
+function solve_positions(
+    layout::Zarate, original_graph; force_layer = Vector{Pair{Int, Int}}()
+)
     graph = copy(original_graph)
 
     # 1. Layer Assigment
-    layer2nodes = layer_by_longest_path_to_source(graph)
+    layer2nodes = layer_by_longest_path_to_source(graph, force_layer)
     is_dummy_mask, edge_to_path = add_dummy_nodes!(graph, layer2nodes)
 
     # 2. Layer Ordering
