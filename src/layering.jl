@@ -10,7 +10,7 @@ end
 "Correct the layer of each node, according to the optional parameter by user"
 function force_layers!(graph, dists, force_layer::Vector{Pair{Int, Int}})
     # must process from end to beginning as otherwise can't move things after to make space
-    ordered_forced_layers = sort(collect(force_layer), by=last; rev=true)
+    ordered_forced_layers = sort(force_layer, by=last; rev=true)
     for (node_id, target_layer) in ordered_forced_layers
         curr_layer = dists[node_id]
         if target_layer < curr_layer
