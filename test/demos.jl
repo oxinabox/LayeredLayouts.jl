@@ -62,14 +62,14 @@ function test_example(layout, graph_name, tol=0.05; kwargs...)
 end
 
 @testset "$layout Demos" for layout in (Zarate(),)
-    # test_example(layout, :cross)
-    # test_example(layout, :loop)
-    # test_example(layout, :medium_pert)
-    # # test_example(layout, :sankey_3twos)  # commented because 
-    # test_example(layout, :two_lines, 0.02)
-    # test_example(layout, :xcross)
-    # test_example(layout, :tree, 0.07)
-    # test_example(layout, :two_lines, 0.07; force_layer=[6=>3, 8=>4])
+    test_example(layout, :cross)
+    test_example(layout, :loop)
+    test_example(layout, :medium_pert)
+    test_example(layout, :sankey_3twos)
+    test_example(layout, :two_lines, 0.02)
+    test_example(layout, :xcross)
+    test_example(layout, :tree, 0.07)
+    test_example(layout, :two_lines, 0.07; force_layer=[6=>3, 8=>4])
     test_example(layout, :two_lines, 0.07; force_order=[1>=2])
     #test_example(layout, :large_depgraph)  # too big
     #test_example(layout, :extra_large_depgraph)  # too big
