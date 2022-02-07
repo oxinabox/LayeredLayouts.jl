@@ -138,9 +138,9 @@ function ordering_problem(layout::Zarate, graph, layer2nodes;
         # add user specifed ordering constraints
         # for each pair in force_order, it is specified that the value must preceed the key
         # Therefore: [3 (key or k) => 5 (value or v)] translates that 3 must preceed 5
-        for (k, v) in force_order  # convention k > v
+        for (k, v) in force_order  # convention k > (is before) v
             if (k in nodes) && (v in nodes)  # ordering applies only if they belong to the same layer
-                @constraint(m , before[v, k] == 1)
+                @constraint(m, before[v, k] == 1)
             end
         end
     end
