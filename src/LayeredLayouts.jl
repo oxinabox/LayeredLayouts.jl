@@ -4,7 +4,7 @@ using JuMP
 using ECOS
 using Cbc
 using IterTools: IterTools
-using LightGraphs
+using Graphs
 using Random
 
 export LayeredMinDistOne, Zarate

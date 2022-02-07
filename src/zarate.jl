@@ -42,7 +42,7 @@ e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
 
 # Example:
 ```julia
-using LightGraphs, Plots
+using Graphs, Plots
 
 g = random_orientation_dag(complete_graph(5))
 xs, ys, paths = solve_positions(Zarate(), g)
