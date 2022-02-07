@@ -26,12 +26,12 @@ function quick_plot(graph, xs, ys, paths)
     end
 end
 
-function quick_plot_solve_paths(layout, graph)
-    xs, ys, paths = solve_positions(layout, graph)
+function quick_plot_solve_paths(layout, graph; kwargs...)
+    xs, ys, paths = solve_positions(layout, graph; kwargs...)
     quick_plot(graph, xs, ys, paths)
 end
-function quick_plot_solve_direct(layout, graph)
-    xs, ys, _ = solve_positions(layout, graph)
+function quick_plot_solve_direct(layout, graph; kwargs...)
+    xs, ys, _ = solve_positions(layout, graph; kwargs...)
     quick_plot(graph, xs, ys)
 end
 
@@ -42,31 +42,36 @@ end
     @plottest quick_plot(SimpleDiGraph(Edge.([1=>2, 2=>3])), [1,2,5], [1,2,3], paths) ref_filename true 0.05
 end
 
-function test_example(layout, graph_name, tol=0.05)
+function test_example(layout, graph_name, tol=0.05; kwargs...)
     @testset "$graph_name" begin
         @testset "$graph_name direct" begin
             graph = getfield(Examples, graph_name)
-            ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "direct", "$graph_name.png")
+            filename = "$graph_name" * join("_" .* string.(keys(kwargs))) * ".png"
+            println(filename)
+            ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "direct", filename)
             mkpath(dirname(ref_filename))
-            @plottest quick_plot_solve_direct(layout, graph) ref_filename true tol
+            @plottest quick_plot_solve_direct(layout, graph; kwargs...) ref_filename true tol
         end
         @testset "$graph_name paths" begin
             graph = getfield(Examples, graph_name)
-            ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "paths", "$graph_name.png")
+            filename = "$graph_name" * join("_" .* string.(keys(kwargs))) * ".png"
+            println(filename)
+            ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "paths", filename)
             mkpath(dirname(ref_filename))
-            @plottest quick_plot_solve_paths(layout, graph) ref_filename true tol
+            @plottest quick_plot_solve_paths(layout, graph; kwargs...) ref_filename true tol
         end
     end
 end
 
 @testset "$layout Demos" for layout in (Zarate(),)
-    test_example(layout, :cross)
-    test_example(layout, :loop)
-    test_example(layout, :medium_pert)
-    test_example(layout, :sankey_3twos)
-    test_example(layout, :two_lines, 0.02)
-    test_example(layout, :xcross)
-    test_example(layout, :tree, 0.07)
+    # test_example(layout, :cross)
+    # test_example(layout, :loop)
+    # test_example(layout, :medium_pert)
+    # # test_example(layout, :sankey_3twos)  # commented because 
+    # test_example(layout, :two_lines, 0.02)
+    # test_example(layout, :xcross)
+    # test_example(layout, :tree, 0.07)
+    test_example(layout, :two_lines, 0.07; force_layer=[6=>3])
     #test_example(layout, :large_depgraph)  # too big
     #test_example(layout, :extra_large_depgraph)  # too big
 end
