@@ -58,8 +58,9 @@ for e in edges(g)
 end
 ```
 """
-function solve_positions(layout::Zarate, original_graph;
-        force_layer = Vector{Pair{Int, Int}}())
+function solve_positions(
+    layout::Zarate, original_graph; force_layer = Vector{Pair{Int, Int}}()
+)
     graph = copy(original_graph)
 
     # 1. Layer Assigment
