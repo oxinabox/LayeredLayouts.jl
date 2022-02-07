@@ -47,7 +47,6 @@ function test_example(layout, graph_name, tol=0.05; kwargs...)
         @testset "$graph_name direct" begin
             graph = getfield(Examples, graph_name)
             filename = "$graph_name" * join("_" .* string.(keys(kwargs))) * ".png"
-            println(filename)
             ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "direct", filename)
             mkpath(dirname(ref_filename))
             @plottest quick_plot_solve_direct(layout, graph; kwargs...) ref_filename true tol
@@ -55,7 +54,6 @@ function test_example(layout, graph_name, tol=0.05; kwargs...)
         @testset "$graph_name paths" begin
             graph = getfield(Examples, graph_name)
             filename = "$graph_name" * join("_" .* string.(keys(kwargs))) * ".png"
-            println(filename)
             ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "paths", filename)
             mkpath(dirname(ref_filename))
             @plottest quick_plot_solve_paths(layout, graph; kwargs...) ref_filename true tol
@@ -71,7 +69,7 @@ end
     # test_example(layout, :two_lines, 0.02)
     # test_example(layout, :xcross)
     # test_example(layout, :tree, 0.07)
-    test_example(layout, :two_lines, 0.07; force_layer=[6=>3])
+    test_example(layout, :two_lines, 0.07; force_layer=[6=>3, 8=>4])
     #test_example(layout, :large_depgraph)  # too big
     #test_example(layout, :extra_large_depgraph)  # too big
 end
