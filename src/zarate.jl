@@ -37,8 +37,13 @@ The layout is calculated on a graph where dummy nodes can be added to the differ
 As a result, plotting edges as straight lines between two nodes can result in
 more crossings than optimal : edges should instead be routed through these different dummy nodes.
 `paths` contains for each edge, a Tuple of vectors, representing that route through the
-different nodes as x and y coordinates. `force_layer` specify the layer for each node
-e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
+different nodes as x and y coordinates.
+
+Optional arguments:
+
+`force_layer`: Vector{Pair{Int, Int}}
+    specifies the layer for each node
+    e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
 
 # Example:
 ```julia
