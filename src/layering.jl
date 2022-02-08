@@ -13,12 +13,12 @@ function force_layers!(graph, dists, force_layer::Vector{Pair{Int, Int}})
     ordered_forced_layers = sort(force_layer, by=last; rev=true)
     for (node_id, target_layer) in ordered_forced_layers
         curr_layer = dists[node_id]
-        if target_layer < curr_layer
+        if target_layer-1 < curr_layer
             @warn "Ignored force_layer for node $node_id; curr layer ($curr_layer) > desired layer ($target_layer)"
-        elseif any(dists[child] <= target_layer for child in outneighbors(graph, node_id))
+        elseif any(dists[child] <= target_layer-1 for child in outneighbors(graph, node_id))
             @warn "Ignored force_layer for node $node_id; as placing it at $target_layer would place it on same layer, or later than it's children."
         else
-            dists[node_id] = target_layer
+            dists[node_id] = target_layer - 1
         end
     end
     return dists
