@@ -26,7 +26,7 @@ Base.@kwdef struct Zarate <: AbstractLayout
 end
 
 """
-    solve_positions(::Zarate, graph; force_layer)
+    solve_positions(::Zarate, graph; force_layer, force_order)
 
 Returns:
  - `xs`: the xs coordinates of vertices in the layout
@@ -45,6 +45,10 @@ Optional arguments:
     specifies the layer for each node
     e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
 
+force_order: Vector{Pair{Int, Int}}
+    this vector forces the ordering of the nodes in each layer,
+    e.g. `force_order = [3=>2, 1=>3]` forces node 3 to lay before node 2, and node 1 to lay before node 3
+
 # Example:
 ```julia
 using Graphs, Plots
@@ -59,7 +63,9 @@ end
 ```
 """
 function solve_positions(
-    layout::Zarate, original_graph; force_layer = Vector{Pair{Int, Int}}()
+    layout::Zarate, original_graph;
+    force_layer::Vector{Pair{Int, Int}} = Vector{Pair{Int, Int}}(),
+    force_order::Vector{Pair{Int, Int}} = Vector{Pair{Int, Int}}(),
 )
     graph = copy(original_graph)
 
@@ -72,7 +78,7 @@ function solve_positions(
     min_total_distance = Inf
     min_num_crossing = Inf
     local best_pos
-    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes)
+    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes; force_order=force_order)
     for round in 1:typemax(Int)
         round > 1 && forbid_solution!(ordering_model, is_before)
 
@@ -99,7 +105,7 @@ function solve_positions(
 end
 
 """
-    ordering_problem(::Zarate, graph, layer2nodes)
+    ordering_problem(::Zarate, graph, layer2nodes; force_order)
 
 Formulates the problem of working out optimal ordering as a MILP.
 
@@ -109,7 +115,8 @@ Returns:
    which once solved will have `value(is_before[n1][n2]) == true`
    if `n1` is best arrange before `n2`.
 """
-function ordering_problem(layout::Zarate, graph, layer2nodes)
+function ordering_problem(layout::Zarate, graph, layer2nodes;
+        force_order=Vector{Pair{Int, Int}}())
     m = Model(layout.ordering_solver)
     set_silent(m)
 
@@ -127,6 +134,15 @@ function ordering_problem(layout::Zarate, graph, layer2nodes)
                     # at most two of these 3 hold
                     @constraint(m , before[n1, n2] + before[n2, n3] + before[n3, n1] <= 2)
                 end
+            end
+        end
+
+        # add user specifed ordering constraints
+        # for each pair in force_order, it is specified that the value must preceed the key
+        # Therefore: [3 (key or k) => 5 (value or v)] translates that 3 must preceed 5
+        for (k, v) in force_order  # convention k > (is before) v
+            if (k in nodes) && (v in nodes)  # ordering applies only if they belong to the same layer
+                @constraint(m, before[v, k] == 1)
             end
         end
     end
