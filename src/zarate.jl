@@ -21,7 +21,7 @@ In 2018 IEEE Pacific Visualization Symposium (PacificVis) (pp. 135-139). IEEE.
 """
 Base.@kwdef struct Zarate <: AbstractLayout
     time_limit::Dates.Period = Dates.Second(0)
-    ordering_solver::Any = ()->Cbc.Optimizer(; randomSeed=1, randomCbcSeed=1)
+    ordering_solver::Any = ()->Cbc.Optimizer()
     arranging_solver::Any = ECOS.Optimizer
 end
 
@@ -118,6 +118,7 @@ Returns:
 function ordering_problem(layout::Zarate, graph, layer2nodes;
         force_order=Vector{Pair{Int, Int}}())
     m = Model(layout.ordering_solver)
+    typeof(m) <: Cbc.Optimizer && set_optimizer_attribute(m, "randomCbcSeed", 1)
     set_silent(m)
 
     node_is_before = Vector{Any}(undef, nv(graph))
