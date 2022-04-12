@@ -11,8 +11,8 @@ function longest_paths(graph, roots)
     pending = [0 => r for r in roots]
     while(!isempty(pending))
         depth, node = pop!(pending)
-        dists[node] = max(dists[node], depth) + 1  # +1 to make 1-based layer ordering
+        dists[node] = max(dists[node], depth)
         append!(pending, (depth+1) .=> outneighbors(graph, node))
     end
-    return dists
+    return dists .+ 1  # return a 1-based vector
 end
