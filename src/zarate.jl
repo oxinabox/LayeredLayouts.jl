@@ -26,17 +26,6 @@ Base.@kwdef struct Zarate <: AbstractLayout
 end
 
 """
-	_default_ordering_solver()
-
-Default optimizer for ordering - `Cbc` with the random number seed `randomCbcSeed` set to `1`
-"""
-function _default_ordering_solver()
-    optimizer = Cbc.Optimizer()
-    MOI.set(optimizer, MOI.RawOptimizerAttribute("randomCbcSeed"), 1)
-    return optimizer
- end
-
-"""
     solve_positions(::Zarate, graph; force_layer, force_order)
 
 Returns:
