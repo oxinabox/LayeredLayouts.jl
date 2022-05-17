@@ -14,5 +14,5 @@ function longest_paths(graph, roots)
         dists[node] = max(dists[node], depth)
         append!(pending, (depth+1) .=> outneighbors(graph, node))
     end
-    return dists
+    return dists .+ 1  # return a 1-based vector
 end
