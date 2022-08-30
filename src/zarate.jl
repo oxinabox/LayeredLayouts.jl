@@ -198,7 +198,7 @@ end
 function order_layers!(layer2nodes, is_before)
     # Cunning trick: we need to go from the `before` matrix to an actual order list
     # we can do this by sorting when having `lessthan` read from the `before` matrix
-    is_before_func(n1, n2) = Bool(value(is_before[n1][n2]))
+    is_before_func(n1, n2) = round(Bool, value(is_before[n1][n2]))::Bool
     for layer in layer2nodes
         sort!(layer; lt=is_before_func)
     end
