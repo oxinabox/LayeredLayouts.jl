@@ -26,6 +26,13 @@ function quick_plot(graph, xs, ys, paths)
     end
 end
 
+function quick_plot_solve_paths_rotate(layout, graph, angle; kwargs...)
+    xs, ys, paths = solve_positions(layout, graph; kwargs...)
+    newxs, newys, newpaths = rotatecoords(xs, ys, paths, angle)
+    rotatecoords!(xs, ys, paths, angle)
+    @test newxs == xs && newys == ys && newpaths == paths
+    quick_plot(graph, xs, ys, paths)
+end
 function quick_plot_solve_paths(layout, graph; kwargs...)
     xs, ys, paths = solve_positions(layout, graph; kwargs...)
     quick_plot(graph, xs, ys, paths)
@@ -57,6 +64,15 @@ function test_example(layout, graph_name, tol=0.05; kwargs...)
             ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "paths", filename)
             mkpath(dirname(ref_filename))
             @plottest quick_plot_solve_paths(layout, graph; kwargs...) ref_filename true tol
+        end
+        @testset "$graph_name paths rotate" begin
+            for angle in [π/2, -π/2]
+                graph = getfield(Examples, graph_name)
+                filename = "$graph_name" * join("_" .* string.(keys(kwargs))) * "_angle$(rad2deg(angle))" * ".png"
+                ref_filename = joinpath(@__DIR__, "references", string(typeof(layout)), "rotate", filename)
+                mkpath(dirname(ref_filename))
+                @plottest quick_plot_solve_paths_rotate(layout, graph, angle; kwargs...) ref_filename true tol
+            end
         end
     end
 end

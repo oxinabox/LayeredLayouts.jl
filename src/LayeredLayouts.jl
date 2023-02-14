@@ -8,7 +8,7 @@ using Graphs
 using Random
 
 export LayeredMinDistOne, Zarate
-export solve_positions
+export solve_positions, rotatecoords, rotatecoords!
 
 abstract type AbstractLayout end
 
