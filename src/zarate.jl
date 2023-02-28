@@ -26,7 +26,7 @@ Base.@kwdef struct Zarate <: AbstractLayout
 end
 
 """
-    solve_positions(::Zarate, graph; force_layer, force_order)
+    solve_positions(::Zarate, graph; force_layer, force_order, force_equal_layers)
 
 Returns:
  - `xs`: the xs coordinates of vertices in the layout
@@ -45,9 +45,15 @@ Optional arguments:
     specifies the layer for each node
     e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
 
-force_order: Vector{Pair{Int, Int}}
+`force_order`: Vector{Pair{Int, Int}}
     this vector forces the ordering of the nodes in each layer,
     e.g. `force_order = [3=>2, 1=>3]` forces node 3 to lay before node 2, and node 1 to lay before node 3
+
+`force_equal_layers`: Vector{Pair{Int, Int}}
+    force the nodes of distinct layers to have identical y-positions.
+    e.g. `force_equal_layers = [i=>j, …]` specifies that the node orderings and
+    y-positions in layers `i` and `j` must be equal; note that the number of nodes in layers
+    `i` and `j` must be identical.
 
 # Example:
 ```julia
@@ -66,6 +72,7 @@ function solve_positions(
     layout::Zarate, original_graph;
     force_layer::Vector{Pair{Int, Int}} = Vector{Pair{Int, Int}}(),
     force_order::Vector{Pair{Int, Int}} = Vector{Pair{Int, Int}}(),
+    force_equal_layers::Vector{Pair{Int, Int}} = Vector{Pair{Int, Int}}()
 )
     graph = copy(original_graph)
 
@@ -78,7 +85,9 @@ function solve_positions(
     min_total_distance = Inf
     min_num_crossing = Inf
     local best_pos
-    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes; force_order=force_order)
+    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes;
+                                                 force_order=force_order,
+                                                 force_equal_layers=force_equal_layers)
     for round in 1:typemax(Int)
         round > 1 && forbid_solution!(ordering_model, is_before)
 
@@ -93,7 +102,8 @@ function solve_positions(
         order_layers!(layer2nodes, is_before)
 
         # 3. Node Arrangement
-        xs, ys, total_distance = assign_coordinates(layout, graph, layer2nodes)
+        xs, ys, total_distance = assign_coordinates(layout, graph, layer2nodes;
+                                                    force_equal_layers=force_equal_layers)
         if total_distance < min_total_distance
             min_total_distance = total_distance
             best_pos = (xs, ys)
@@ -105,7 +115,7 @@ function solve_positions(
 end
 
 """
-    ordering_problem(::Zarate, graph, layer2nodes; force_order)
+    ordering_problem(::Zarate, graph, layer2nodes; force_order, force_equal_layers)
 
 Formulates the problem of working out optimal ordering as a MILP.
 
@@ -116,7 +126,8 @@ Returns:
    if `n1` is best arrange before `n2`.
 """
 function ordering_problem(layout::Zarate, graph, layer2nodes;
-        force_order=Vector{Pair{Int, Int}}())
+        force_order=Vector{Pair{Int, Int}}(),
+        force_equal_layers=Vector{Pair{Int, Int}}())
     m = Model(layout.ordering_solver)
     set_silent(m)
 
@@ -146,6 +157,22 @@ function ordering_problem(layout::Zarate, graph, layer2nodes;
             end
         end
     end
+
+    # force identical pairings in certain layers
+    for (layerA, layerB) in force_equal_layers  # ordering in layer1 and layer2 must be identical
+        nodesA = sort(layer2nodes[layerA]) # internal ordering in each layer matters
+        nodesB = sort(layer2nodes[layerB])
+        for (i1, (nA1, nB1)) in enumerate(zip(nodesA, nodesB))
+            for i2 in i1+1:length(nodesA)
+                nA2 = nodesA[i2]
+                nB2 = nodesB[i2]
+                variable_layerA = variable_by_name(m, "befores_$layerA[$nA1,$nA2]")
+                variable_layerB = variable_by_name(m, "befores_$layerB[$nB1,$nB2]")
+                @constraint(m, variable_layerA == variable_layerB)
+            end
+        end
+    end
+
 
     weights_mat = weights(graph)
 
@@ -229,15 +256,17 @@ function forbid_solution!(m, is_before)
 end
 
 """
-    assign_coordinates(graph, layer2nodes)
+    assign_coordinates(layout, graph, layer2nodes; force_equal_layers)
 
 Works out the `x` and `y` coordinates for each node in the `graph`.
 This is via formulating the problem as a QP, and minimizing total distance
 of links.
 It maintains the order given in `layer2nodes`s.
+`force_equal_layers` enforces equal y-positions across paired nodes in specified layers.
 returns: `xs, ys, total_distance`
 """
-function assign_coordinates(layout, graph, layer2nodes)
+function assign_coordinates(layout, graph, layer2nodes;
+                            force_equal_layers=Vector{Pair{Int,Int}}())
     m = Model(layout.arranging_solver)
     set_silent(m)
     set_optimizer_attribute(m, "print_level", 0)  # TODO this can be deleted once the version of IPOpt that actually supports `set_silent` is released
@@ -251,6 +280,17 @@ function assign_coordinates(layout, graph, layer2nodes)
             y = @variable(m, base_name="y_$node")
             @constraint(m, prev_y + 1.0 <= y)
             prev_y = node2y[node] = y
+        end
+    end
+
+    # force identical y-positions in certain layers
+    for (layerA, layerB) in force_equal_layers  # ordering in layer1 and layer2 must be identical
+        nodesA = sort(layer2nodes[layerA]) # internal ordering in each layer matters
+        nodesB = sort(layer2nodes[layerB])
+        for (nA, nB) in zip(nodesA, nodesB)
+            yA = node2y[nA]
+            yB = node2y[nB]
+            @constraint(m, yA == yB)
         end
     end
 

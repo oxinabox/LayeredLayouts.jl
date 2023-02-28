@@ -25,6 +25,11 @@ module Examples
         2 => 4, 4=>6, 6=>8,
     ]))
 
+    two_lines_flipped_vertex_order = SimpleDiGraph(Edge.([
+        1=>3, 3=>6, 5=>7, 7=>9, # flips insertion order of vertex 5 and 6
+        2=>4, 4=>5, 6=>8,
+    ]))
+
     loop = SimpleDiGraph(Edge.([
         1 .=> [2, 3];
         2 => 4; 4 => 6;

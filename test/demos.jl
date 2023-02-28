@@ -71,6 +71,8 @@ end
     test_example(layout, :tree, 0.07)
     test_example(layout, :two_lines, 0.07; force_layer=[6=>4, 8=>5])
     test_example(layout, :two_lines, 0.07; force_order=[1=>2])
+    test_example(layout, :two_lines_flipped_vertex_order)
+    test_example(layout, :two_lines_flipped_vertex_order; force_equal_layers=[1=>3])
     #test_example(layout, :large_depgraph)  # too big
     #test_example(layout, :extra_large_depgraph)  # too big
 end
