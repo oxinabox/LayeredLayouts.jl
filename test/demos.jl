@@ -62,6 +62,7 @@ function test_example(layout, graph_name, tol=0.05; kwargs...)
 end
 
 @testset "$layout Demos" for layout in (Zarate(),)
+    test_example(layout, :tiny_depgraph)
     test_example(layout, :cross)
     test_example(layout, :loop)
     test_example(layout, :medium_pert)
