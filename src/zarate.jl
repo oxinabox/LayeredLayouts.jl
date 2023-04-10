@@ -21,7 +21,7 @@ In 2018 IEEE Pacific Visualization Symposium (PacificVis) (pp. 135-139). IEEE.
 """
 Base.@kwdef struct Zarate <: AbstractLayout
     time_limit::Dates.Period = Dates.Second(0)
-    ordering_solver::Any = optimizer_with_attributes(Cbc.Optimizer, "randomSeed"=>1, "randomCbcSeed"=>1)
+    ordering_solver::Any = optimizer_with_attributes(HiGHS.Optimizer, "random_seed" => 1)
     arranging_solver::Any = ECOS.Optimizer
 end
 
