@@ -2,7 +2,7 @@ module LayeredLayouts
 using Dates
 using JuMP
 using ECOS
-using Cbc
+using HiGHS
 using IterTools: IterTools
 using Graphs
 using Random
