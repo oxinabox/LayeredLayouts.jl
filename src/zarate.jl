@@ -85,9 +85,11 @@ function solve_positions(
     min_total_distance = Inf
     min_num_crossing = Inf
     local best_pos
-    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes;
-                                                 force_order=force_order,
-                                                 force_equal_layers=force_equal_layers)
+    ordering_model, is_before = ordering_problem(
+        layout, graph, layer2nodes;
+        force_order=force_order,
+        force_equal_layers=force_equal_layers,
+    )
     for round in 1:typemax(Int)
         round > 1 && forbid_solution!(ordering_model, is_before)
 
@@ -102,8 +104,7 @@ function solve_positions(
         order_layers!(layer2nodes, is_before)
 
         # 3. Node Arrangement
-        xs, ys, total_distance = assign_coordinates(layout, graph, layer2nodes;
-                                                    force_equal_layers=force_equal_layers)
+        xs, ys, total_distance = assign_coordinates(layout, graph, layer2nodes; force_equal_layers=force_equal_layers)
         if total_distance < min_total_distance
             min_total_distance = total_distance
             best_pos = (xs, ys)
@@ -138,8 +139,7 @@ function ordering_problem(layout::Zarate, graph, layer2nodes;
             for n2 in nodes
                 n1 === n2 && continue
                 haskey(is_before, (n1, n2)) && continue
-                is_before[n1=>n2] = @variable(m, binary=true,
-                                                base_name="befores_$layer[$n1=>$n2]")
+                is_before[n1=>n2] = @variable(m, binary=true, base_name="befores_$layer[$n1=>$n2]")
             end
         end
         # constrain variables
@@ -151,9 +151,7 @@ function ordering_problem(layout::Zarate, graph, layer2nodes;
                 for n3 in nodes
                     (n1 === n3 || n2 === n3) && continue
                     # at most two of these 3 hold
-                    @constraint(m, is_before[n1=>n2] +
-                                   is_before[n2=>n3] + 
-                                   is_before[n3=>n1] <= 2)
+                    @constraint(m, is_before[n1=>n2] + is_before[n2=>n3] +  is_before[n3=>n1] <= 2)
                 end
             end
         end
