@@ -66,7 +66,7 @@ end
     test_example(layout, :cross)
     test_example(layout, :loop)
     test_example(layout, :medium_pert)
-    @test_broken true  # sankey_3twos
+    @test_broken false  # sankey_3twos
     # test_example(layout, :sankey_3twos) # currently broken
     test_example(layout, :two_lines, 0.02)
     test_example(layout, :xcross)
