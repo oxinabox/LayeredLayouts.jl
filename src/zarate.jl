@@ -26,7 +26,7 @@ Base.@kwdef struct Zarate <: AbstractLayout
 end
 
 """
-    solve_positions(::Zarate, graph; force_layer, force_order)
+    solve_positions(::Zarate, graph; force_layer, force_order, force_equal_layers)
 
 Returns:
  - `xs`: the xs coordinates of vertices in the layout
@@ -45,9 +45,15 @@ Optional arguments:
     specifies the layer for each node
     e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
 
-force_order: Vector{Pair{Int, Int}}
+`force_order`: Vector{Pair{Int, Int}}
     this vector forces the ordering of the nodes in each layer,
     e.g. `force_order = [3=>2, 1=>3]` forces node 3 to lay before node 2, and node 1 to lay before node 3
+
+`force_equal_layers`: Vector{Pair{Int, Int}}
+    force the nodes of distinct layers to have identical y-positions.
+    e.g. `force_equal_layers = [i=>j, …]` specifies that the node orderings and
+    y-positions in layers `i` and `j` must be equal; note that the number of nodes in layers
+    `i` and `j` must be identical.
 
 # Example:
 ```julia
@@ -66,6 +72,7 @@ function solve_positions(
     layout::Zarate, original_graph;
     force_layer::Vector{Pair{Int, Int}} = Vector{Pair{Int, Int}}(),
     force_order::Vector{Pair{Int, Int}} = Vector{Pair{Int, Int}}(),
+    force_equal_layers::Vector{Pair{Int, Int}} = Vector{Pair{Int, Int}}()
 )
     graph = copy(original_graph)
 
@@ -78,7 +85,11 @@ function solve_positions(
     min_total_distance = Inf
     min_num_crossing = Inf
     local best_pos
-    ordering_model, is_before = ordering_problem(layout, graph, layer2nodes; force_order=force_order)
+    ordering_model, is_before = ordering_problem(
+        layout, graph, layer2nodes;
+        force_order=force_order,
+        force_equal_layers=force_equal_layers,
+    )
     for round in 1:typemax(Int)
         round > 1 && forbid_solution!(ordering_model, is_before)
 
@@ -93,7 +104,7 @@ function solve_positions(
         order_layers!(layer2nodes, is_before)
 
         # 3. Node Arrangement
-        xs, ys, total_distance = assign_coordinates(layout, graph, layer2nodes)
+        xs, ys, total_distance = assign_coordinates(layout, graph, layer2nodes; force_equal_layers=force_equal_layers)
         if total_distance < min_total_distance
             min_total_distance = total_distance
             best_pos = (xs, ys)
@@ -105,34 +116,42 @@ function solve_positions(
 end
 
 """
-    ordering_problem(::Zarate, graph, layer2nodes; force_order)
+    ordering_problem(::Zarate, graph, layer2nodes; force_order, force_equal_layers)
 
 Formulates the problem of working out optimal ordering as a MILP.
 
 Returns:
  - `model::Model`: the JuMP model that when optized will find the optimal ordering
- - `is_before::AbstractVector{AbstractVector{Variable}}`: the variables of the model,
-   which once solved will have `value(is_before[n1][n2]) == true`
-   if `n1` is best arrange before `n2`.
+ - `is_before::Dict{Pair{Int, Int}, VariableRef}`: the variables of the model,
+   which once solved will have `value(is_before[n1=>n2]) == true` if `n1` is best
+   arranged before `n2`.
 """
 function ordering_problem(layout::Zarate, graph, layer2nodes;
-        force_order=Vector{Pair{Int, Int}}())
+        force_order=Vector{Pair{Int, Int}}(),
+        force_equal_layers=Vector{Pair{Int, Int}}())
     m = Model(layout.ordering_solver)
     set_silent(m)
 
-    node_is_before = Vector{Any}(undef, nv(graph))
+    is_before = Dict{Pair{Int, Int}, VariableRef}()
     for (layer, nodes) in enumerate(layer2nodes)
-        before = @variable(m, [nodes, nodes], Bin, base_name="befores_$layer")
+        # initialize `is_before` variable-container
         for n1 in nodes
-            node_is_before[n1] = before[n1, :]
+            for n2 in nodes
+                n1 === n2 && continue
+                haskey(is_before, (n1, n2)) && continue
+                is_before[n1=>n2] = @variable(m, binary=true, base_name="befores_$layer[$n1=>$n2]")
+            end
+        end
+        # constrain variables
+        for n1 in nodes
             for n2 in nodes
                 n1 === n2 && continue
                 # can't have n1<n2 and n2<n1
-                @constraint(m, before[n1, n2] + before[n2, n1] == 1)
+                @constraint(m, is_before[n1=>n2] + is_before[n2=>n1] == 1)
                 for n3 in nodes
                     (n1 === n3 || n2 === n3) && continue
                     # at most two of these 3 hold
-                    @constraint(m , before[n1, n2] + before[n2, n3] + before[n3, n1] <= 2)
+                    @constraint(m, is_before[n1=>n2] + is_before[n2=>n3] +  is_before[n3=>n1] <= 2)
                 end
             end
         end
@@ -142,10 +161,24 @@ function ordering_problem(layout::Zarate, graph, layer2nodes;
         # Therefore: [3 (key or k) => 5 (value or v)] translates that 3 must preceed 5
         for (k, v) in force_order  # convention k > (is before) v
             if (k in nodes) && (v in nodes)  # ordering applies only if they belong to the same layer
-                @constraint(m, before[v, k] == 1)
+                @constraint(m, is_before[v=>k] == 1)
             end
         end
     end
+
+    # force identical pairings in certain layers
+    for (layerA, layerB) in force_equal_layers  # ordering in layer1 and layer2 must be identical
+        nodesA = sort(layer2nodes[layerA]) # internal ordering in each layer matters
+        nodesB = sort(layer2nodes[layerB])
+        for (i1, (nA1, nB1)) in enumerate(zip(nodesA, nodesB))
+            for i2 in i1+1:length(nodesA)
+                nA2 = nodesA[i2]
+                nB2 = nodesB[i2]
+                @constraint(m, is_before[nA1=>nA2] == is_before[nB1=>nB2])
+            end
+        end
+    end
+
 
     weights_mat = weights(graph)
 
@@ -159,12 +192,13 @@ function ordering_problem(layout::Zarate, graph, layer2nodes;
                 (src1 === src2 || dst1 === dst2) && continue
                 # Zarate et al section "Further improvements with branching priorities"
                 # we don't make this binary even though it is, because that makes the branchs happen
-                # at wrong places. It only needs to branch the `before_*` variables.
+                # at wrong places. It only needs to branch the `is_before` variables.
                 # the crossing will be binary as a result
                 crossing = @variable(m, binary=false, integer=false, base_name="cross $src1-$dst2 x $src1-$dst2")
                 get!(TDict{VariableRef}, crossing_vars, (src1, dst1))[src2, dst2] = crossing
                 # two edges cross if the src1 is before scr2; but dst1 is after dest2
-                @constraint(m, node_is_before[src1][src2] + node_is_before[dst2][dst1] - 1 <= crossing)
+                @constraint(m, is_before[src1=>src2] + is_before[dst2=>dst1] - 1 
+                               <= crossing)
 
                 # for Sankey diagrams we minimise not just crossing but area of crossing
                 # treating the weights of the graph as the widths of the line and ignoring skew
@@ -191,14 +225,14 @@ function ordering_problem(layout::Zarate, graph, layer2nodes;
 
     @objective(m, Min, sum(crossings, layer2nodes))
     #@show m
-    return m, node_is_before
+    return m, is_before
 end
 
 
 function order_layers!(layer2nodes, is_before)
     # Cunning trick: we need to go from the `before` matrix to an actual order list
     # we can do this by sorting when having `lessthan` read from the `before` matrix
-    is_before_func(n1, n2) = round(Bool, value(is_before[n1][n2]))::Bool
+    is_before_func(n1, n2) = round(Bool, value(is_before[n1=>n2]))::Bool
     for layer in layer2nodes
         sort!(layer; lt=is_before_func)
     end
@@ -214,12 +248,10 @@ Modifies the JuMP model `m` to forbid the solution present in `is_before`.
 function forbid_solution!(m, is_before)
     cur_trues = AffExpr(0)
     total_trues = 0
-    for var_list in is_before
-        for var in var_list
-            if value(var) > 0.5
-                add_to_expression!(cur_trues, var)
-                total_trues += 1
-            end
+    for var in values(is_before)
+        if value(var) > 0.5
+            add_to_expression!(cur_trues, var)
+            total_trues += 1
         end
     end
     # for it to be a different order some of the ones that are currently true must swap to being false
@@ -229,15 +261,17 @@ function forbid_solution!(m, is_before)
 end
 
 """
-    assign_coordinates(graph, layer2nodes)
+    assign_coordinates(layout, graph, layer2nodes; force_equal_layers)
 
 Works out the `x` and `y` coordinates for each node in the `graph`.
 This is via formulating the problem as a QP, and minimizing total distance
 of links.
 It maintains the order given in `layer2nodes`s.
+`force_equal_layers` enforces equal y-positions across paired nodes in specified layers.
 returns: `xs, ys, total_distance`
 """
-function assign_coordinates(layout, graph, layer2nodes)
+function assign_coordinates(layout, graph, layer2nodes;
+                            force_equal_layers=Vector{Pair{Int,Int}}())
     m = Model(layout.arranging_solver)
     set_silent(m)
     set_optimizer_attribute(m, "print_level", 0)  # TODO this can be deleted once the version of IPOpt that actually supports `set_silent` is released
@@ -251,6 +285,17 @@ function assign_coordinates(layout, graph, layer2nodes)
             y = @variable(m, base_name="y_$node")
             @constraint(m, prev_y + 1.0 <= y)
             prev_y = node2y[node] = y
+        end
+    end
+
+    # force identical y-positions in certain layers
+    for (layerA, layerB) in force_equal_layers  # ordering in layer1 and layer2 must be identical
+        nodesA = sort(layer2nodes[layerA]) # internal ordering in each layer matters
+        nodesB = sort(layer2nodes[layerB])
+        for (nA, nB) in zip(nodesA, nodesB)
+            yA = node2y[nA]
+            yB = node2y[nB]
+            @constraint(m, yA == yB)
         end
     end
 
