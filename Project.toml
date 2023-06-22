@@ -1,7 +1,7 @@
 name = "LayeredLayouts"
 uuid = "f4a74d36-062a-4d48-97cd-1356bad1de4e"
 authors = ["Frames White <oxinabox@ucc.asn.au> and contributors"]
-version = "0.2.8"
+version = "0.2.9"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
