@@ -1,4 +1,4 @@
-# LayeredLayouts [![Build Status](https://github.com/oxinabox/LayeredLayouts.jl/workflows/CI/badge.svg)](https://github.com/oxinabox/LayeredLayouts.jl/actions) [![Coverage](https://coveralls.io/repos/github/oxinabox/LayeredLayouts.jl/badge.svg?branch=master)](https://coveralls.io/github/oxinabox/LayeredLayouts.jl?branch=master)
+# LayeredLayouts [![CI](https://github.com/oxinabox/LayeredLayouts.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/oxinabox/LayeredLayouts.jl/actions/workflows/ci.yml)
 
 
 LayeredLayouts is a package for working out how to layout graphs in a layered fashion.
