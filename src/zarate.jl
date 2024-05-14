@@ -146,11 +146,11 @@ function ordering_problem(layout::Zarate, graph, layer2nodes;
         for n1 in nodes
             for n2 in nodes
                 n1 === n2 && continue
-                # can't have n1<n2 and n2<n1
+                # Antisymmetry: can't have n1<n2 and n2<n1
                 @constraint(m, is_before[n1=>n2] + is_before[n2=>n1] == 1)
                 for n3 in nodes
                     (n1 === n3 || n2 === n3) && continue
-                    # at most two of these 3 hold
+                    # Transitivity: at most two of these 3 hold
                     @constraint(m, is_before[n1=>n2] + is_before[n2=>n3] +  is_before[n3=>n1] <= 2)
                 end
             end
