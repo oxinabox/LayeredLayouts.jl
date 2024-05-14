@@ -5,8 +5,7 @@ using Plots
 using Graphs
 using LayeredLayouts
 using Test
-# using Gtk  # enable for replacing test images
-using VisualRegressionTests
+using ReferenceTests
 
 include("examples.jl")
 
