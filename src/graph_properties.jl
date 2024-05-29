@@ -7,7 +7,7 @@ sinks(graph) = findall(iszero, outdegree(graph))
 
 function longest_paths(graph, roots)
     dag_or_error(graph)
-    dists = zeros(nv(graph))
+    dists = zeros(Int, nv(graph))
     pending = [0 => r for r in roots]
     while(!isempty(pending))
         depth, node = pop!(pending)

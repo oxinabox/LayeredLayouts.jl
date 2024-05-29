@@ -278,6 +278,7 @@ function assign_coordinates(layout, graph, layer2nodes;
 
     node2y = Dict{Int, VariableRef}()
     for (layer, nodes) in enumerate(layer2nodes)
+        isempty(nodes) && continue # skip empty layers
         first_node, other_nodes = Iterators.peel(nodes)
         prev_y = node2y[first_node] = @variable(m, base_name="y_$first_node")
         for node in other_nodes

@@ -3,7 +3,8 @@
 function layer_by_longest_path_to_source(graph, force_layer)
     dists = longest_paths(graph, sources(graph))
     force_layers!(graph, dists, force_layer)
-    layer_groups = collect.(IterTools.groupby(i->dists[i], sort(vertices(graph), by=i->dists[i])))
+    layer_groups = [findall(==(d), dists) for d in 1:maximum(dists)]
+
     return layer_groups
 end
 
