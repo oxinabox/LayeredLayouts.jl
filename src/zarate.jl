@@ -42,8 +42,10 @@ different nodes as x and y coordinates.
 Optional arguments:
 
 `force_layer`: Vector{Pair{Int, Int}}
-    specifies the layer for each node
-    e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
+    specifies the layer for each node e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and
+    layer 5 to node 5. If not specified, layer indices are calculated by longest path to
+    source vertices, with child vertex' layers following parents', and with layer indices
+    assigned consecutively from 1.
 
 `force_order`: Vector{Pair{Int, Int}}
     this vector forces the ordering of the nodes in each layer,
