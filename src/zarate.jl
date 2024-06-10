@@ -42,8 +42,10 @@ different nodes as x and y coordinates.
 Optional arguments:
 
 `force_layer`: Vector{Pair{Int, Int}}
-    specifies the layer for each node
-    e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and layer 5 to node 5
+    specifies the layer for each node e.g. [3=>1, 5=>5] specifies layer 1 for node 3 and
+    layer 5 to node 5. If not specified, layer indices are calculated by longest path to
+    source vertices, with child vertex' layers following parents', and with layer indices
+    assigned consecutively from 1.
 
 `force_order`: Vector{Pair{Int, Int}}
     this vector forces the ordering of the nodes in each layer,
@@ -278,6 +280,7 @@ function assign_coordinates(layout, graph, layer2nodes;
 
     node2y = Dict{Int, VariableRef}()
     for (layer, nodes) in enumerate(layer2nodes)
+        isempty(nodes) && continue # skip empty layers
         first_node, other_nodes = Iterators.peel(nodes)
         prev_y = node2y[first_node] = @variable(m, base_name="y_$first_node")
         for node in other_nodes
