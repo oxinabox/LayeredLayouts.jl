@@ -82,6 +82,12 @@ function solve_positions(
     layer2nodes = layer_by_longest_path_to_source(graph, force_layer)
     is_dummy_mask, edge_to_path = add_dummy_nodes!(graph, layer2nodes)
 
+    # If every layer has a single node there is no ordering to solve for
+    if all(nodes -> length(nodes) <= 1, layer2nodes)
+        xs, ys, _ = assign_coordinates(layout, graph, layer2nodes; force_equal_layers=force_equal_layers)
+        return xs[.!is_dummy_mask], ys[.!is_dummy_mask], Dict(edge => (xs[path], ys[path]) for (edge, path) in edge_to_path)
+    end
+
     # 2. Layer Ordering
     start_time = Dates.now()
     min_total_distance = Inf

@@ -19,7 +19,11 @@ module Examples
         9 => 10
     10 => 11
     ]))
-    
+    # Trivial ordering (#47)
+    single_edge = SimpleDiGraph(Edge.([
+        1 => 2
+    ]))
+
     two_lines = SimpleDiGraph(Edge.([
         1 => 3, 3=>5, 5=>7, 7=>9,
         2 => 4, 4=>6, 6=>8,
